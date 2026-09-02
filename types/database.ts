@@ -78,6 +78,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       inventory: {
         Row: {
@@ -143,6 +144,15 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       verification_logs: {
         Row: {
@@ -181,6 +191,15 @@ export interface Database {
           source?: LogSource
           created_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "verification_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       counterfeit_reports: {
         Row: {
@@ -228,6 +247,15 @@ export interface Database {
           status?: ReportStatus
           created_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "counterfeit_reports_reporter_id_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       recall_alerts: {
         Row: {
@@ -266,7 +294,12 @@ export interface Database {
           is_active?: boolean
           created_at?: string
         }
+        Relationships: []
       }
     }
+    Views: Record<string, never>
+    Functions: Record<string, never>
+    Enums: Record<string, never>
+    CompositeTypes: Record<string, never>
   }
 }

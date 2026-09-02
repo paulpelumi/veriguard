@@ -11,6 +11,9 @@ export function ThemeToggle() {
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    // Deliberately deferring to a post-hydration render so resolvedTheme
+    // reads the client's actual theme instead of the SSR placeholder.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true)
   }, [])
 
