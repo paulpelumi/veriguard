@@ -32,7 +32,7 @@ export default function LandingPage() {
         <Logo />
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Button variant="ghost" render={<Link href="/login" />}>
+          <Button variant="ghost" nativeButton={false} render={<Link href="/login" />}>
             Log in
           </Button>
         </div>
@@ -77,6 +77,7 @@ export default function LandingPage() {
             <CardFooter>
               <Button
                 className="w-full"
+                nativeButton={false}
                 render={<Link href="/register?role=consumer" />}
               >
                 Continue as Consumer
@@ -107,6 +108,7 @@ export default function LandingPage() {
             <CardFooter>
               <Button
                 className="w-full"
+                nativeButton={false}
                 render={<Link href="/register?role=business" />}
               >
                 Continue as Business
