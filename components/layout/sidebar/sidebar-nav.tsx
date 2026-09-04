@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 
 import { cn } from "@/lib/utils"
-import type { NavItem } from "@/lib/utils/navigation"
+import { navIcons, type NavItem } from "@/lib/utils/navigation"
 
 interface SidebarNavProps {
   items: NavItem[]
@@ -18,7 +18,7 @@ export function SidebarNav({ items, onNavigate }: SidebarNavProps) {
     <nav className="flex flex-col gap-1 px-3">
       {items.map((item) => {
         const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
-        const Icon = item.icon
+        const Icon = navIcons[item.icon]
 
         return (
           <Link
