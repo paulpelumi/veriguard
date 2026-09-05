@@ -188,6 +188,8 @@ export interface Database {
           verification_status: LogVerificationStatus
           raw_response: Record<string, unknown> | null
           source: LogSource
+          user_state: string | null
+          user_lga: string | null
           created_at: string
         }
         Insert: {
@@ -200,6 +202,8 @@ export interface Database {
           verification_status: LogVerificationStatus
           raw_response?: Record<string, unknown> | null
           source?: LogSource
+          user_state?: string | null
+          user_lga?: string | null
           created_at?: string
         }
         Update: {
@@ -212,6 +216,8 @@ export interface Database {
           verification_status?: LogVerificationStatus
           raw_response?: Record<string, unknown> | null
           source?: LogSource
+          user_state?: string | null
+          user_lga?: string | null
           created_at?: string
         }
         Relationships: [
@@ -757,6 +763,39 @@ export interface Database {
         }
         Relationships: []
       }
+      geographic_stats: {
+        Row: {
+          id: string
+          state: string
+          period_date: string
+          verification_count: number
+          counterfeit_reports: number
+          not_found_count: number
+          anomaly_count: number
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          state: string
+          period_date: string
+          verification_count?: number
+          counterfeit_reports?: number
+          not_found_count?: number
+          anomaly_count?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          state?: string
+          period_date?: string
+          verification_count?: number
+          counterfeit_reports?: number
+          not_found_count?: number
+          anomaly_count?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: {
@@ -806,6 +845,22 @@ export interface Database {
       anomaly_baseline_stats: {
         Args: { p_since: string; p_until: string }
         Returns: { nafdac_number: string; baseline_daily_avg: number }[]
+      }
+      geo_verification_stats: {
+        Args: { p_since: string; p_until: string }
+        Returns: { state: string; verification_count: number; not_found_count: number }[]
+      }
+      geo_counterfeit_report_stats: {
+        Args: { p_since: string; p_until: string }
+        Returns: { state: string; report_count: number }[]
+      }
+      geo_anomaly_state_touches: {
+        Args: { p_since: string; p_until: string }
+        Returns: { state: string; anomaly_touch_count: number }[]
+      }
+      active_anomaly_states: {
+        Args: { p_since: string }
+        Returns: { state: string }[]
       }
     }
     Enums: Record<string, never>

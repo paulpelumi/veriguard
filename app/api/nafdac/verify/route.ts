@@ -65,7 +65,8 @@ async function logVerification(
   supabase: SupabaseServerClient,
   userId: string,
   nafdacNumber: string,
-  result: NafdacVerificationResult
+  result: NafdacVerificationResult,
+  location: { state: string | null; lga: string | null }
 ) {
   await supabase.from("verification_logs").insert({
     user_id: userId,
@@ -76,6 +77,12 @@ async function logVerification(
     verification_status: toLogStatus(result.status),
     raw_response: result as unknown as Record<string, unknown>,
     source: "web",
+    // Module 6 (Geographic Intelligence): snapshotting the user's state at
+    // verification time, not just joining to their current profile later,
+    // so a state stays accurate for this log even if the user's profile
+    // state changes afterward.
+    user_state: location.state,
+    user_lga: location.lga,
   })
 }
 
@@ -91,6 +98,13 @@ export async function POST(request: NextRequest) {
       { status: 401 }
     )
   }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("state, lga")
+    .eq("id", user.id)
+    .single()
+  const userLocation = { state: profile?.state ?? null, lga: profile?.lga ?? null }
 
   const body = await request.json().catch(() => null)
   const rawNumber = typeof body?.nafdacNumber === "string" ? body.nafdacNumber : ""
@@ -130,7 +144,7 @@ export async function POST(request: NextRequest) {
       timestamp,
       source: "mock",
     }
-    await logVerification(supabase, user.id, nafdacNumber, result)
+    await logVerification(supabase, user.id, nafdacNumber, result, userLocation)
     return respond(result, 400)
   }
 
@@ -227,7 +241,7 @@ export async function POST(request: NextRequest) {
       (cached.additional_info as Record<string, string> | null) ?? undefined,
       "cache"
     )
-    await logVerification(supabase, user.id, nafdacNumber, result)
+    await logVerification(supabase, user.id, nafdacNumber, result, userLocation)
     return respond(result)
   }
 
@@ -303,7 +317,7 @@ export async function POST(request: NextRequest) {
     })
   }
 
-  await logVerification(supabase, user.id, nafdacNumber, result)
+  await logVerification(supabase, user.id, nafdacNumber, result, userLocation)
 
   return respond(result)
 }
