@@ -1,12 +1,15 @@
 import { getIntelligenceData } from "@/lib/intelligence/get-intelligence-data"
-import { requireAdmin } from "@/lib/supabase/require-admin"
+import { createClient } from "@/lib/supabase/server"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { HotspotPanel } from "@/components/intelligence/hotspot-panel"
 import { NigeriaMap } from "@/components/intelligence/nigeria-map"
 import { StateStatsChart } from "@/components/intelligence/state-stats-chart"
 
+// Admin-only access is enforced by the layout above (which itself calls
+// requireAdmin()) and by proxy.ts's route-level guard for every /admin/*
+// path - no need for a third check here.
 export default async function GeographicIntelligencePage() {
-  const { supabase } = await requireAdmin()
+  const supabase = await createClient()
   const { states, hotspots, windowDays } = await getIntelligenceData(supabase)
 
   return (

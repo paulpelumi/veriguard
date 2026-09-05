@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { AlertTriangle, CheckCircle2, ChevronDown, Factory, RefreshCw, ShieldAlert } from "lucide-react"
+import { AlertTriangle, Ban, CheckCircle2, ChevronDown, Factory, RefreshCw, ShieldAlert } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -32,6 +32,27 @@ function ElevatedMonitoringBanner() {
   )
 }
 
+// A confirmed counterfeit (Module 7 admin action) is a stronger claim than
+// an ordinary mismatch or elevated-monitoring flag - it's a human-reviewed
+// determination, not an automated heuristic - so it gets its own, more
+// severe banner rather than folding into the mismatch list.
+function ConfirmedCounterfeitBanner() {
+  return (
+    <div className="flex items-start gap-2 rounded-md border border-destructive bg-destructive/15 p-3 text-sm">
+      <Ban className="mt-0.5 size-4 shrink-0 text-destructive" />
+      <div>
+        <p className="font-semibold uppercase tracking-wide text-destructive">
+          Confirmed Counterfeit
+        </p>
+        <p className="text-foreground">
+          VeriGuard has confirmed this NAFDAC number is being used on a counterfeit product,
+          following a reviewed report. Do not sell or use products under this number.
+        </p>
+      </div>
+    </div>
+  )
+}
+
 interface VerificationResultCardProps {
   result: NafdacVerificationResult
   onRetry: () => void
@@ -54,6 +75,7 @@ export function VerificationResultCard({
     return (
       <Card className="border-warning/30 bg-warning/5">
         <CardContent className="flex flex-col gap-3">
+          {result.confirmed_counterfeit && <ConfirmedCounterfeitBanner />}
           {result.elevated_monitoring && <ElevatedMonitoringBanner />}
           <div className="flex items-center gap-2 text-warning">
             <ShieldAlert className="size-5" />

@@ -7,6 +7,7 @@ import {
   type ScrapedRecallCandidate,
 } from "@/lib/recalls/recall-parser"
 import { createClient } from "@/lib/supabase/server"
+import { requireAdminApi } from "@/lib/supabase/require-admin-api"
 
 const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
@@ -50,24 +51,8 @@ async function fetchSource(url: string): Promise<string | { error: string }> {
 // schedule - this route is purely for on-demand runs and local testing.
 export async function POST() {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return NextResponse.json(
-      { error: { message: "Unauthorized", code: "unauthorized" } },
-      { status: 401 }
-    )
-  }
-
-  const { data: isAdmin } = await supabase.rpc("is_admin")
-  if (!isAdmin) {
-    return NextResponse.json(
-      { error: { message: "Admin access required", code: "forbidden" } },
-      { status: 403 }
-    )
-  }
+  const authError = await requireAdminApi(supabase)
+  if (authError) return authError
 
   const sourceResults: SourceResult[] = []
   const allCandidates: ScrapedRecallCandidate[] = []

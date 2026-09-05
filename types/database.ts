@@ -1,4 +1,4 @@
-export type UserRole = "consumer" | "business"
+export type UserRole = "consumer" | "business" | "manufacturer" | "admin"
 
 export type BusinessType =
   | "pharmacy"
@@ -68,6 +68,7 @@ export interface Database {
           lga: string | null
           subscription_tier: SubscriptionTier
           is_verified: boolean
+          is_suspended: boolean
           created_at: string
           updated_at: string
         }
@@ -83,6 +84,7 @@ export interface Database {
           lga?: string | null
           subscription_tier?: SubscriptionTier
           is_verified?: boolean
+          is_suspended?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -98,6 +100,7 @@ export interface Database {
           lga?: string | null
           subscription_tier?: SubscriptionTier
           is_verified?: boolean
+          is_suspended?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -629,6 +632,8 @@ export interface Database {
           last_verified_at: string
           verification_count: number
           elevated_until: string | null
+          confirmed_counterfeit: boolean
+          flagged_at: string | null
           created_at: string
         }
         Insert: {
@@ -643,6 +648,8 @@ export interface Database {
           last_verified_at?: string
           verification_count?: number
           elevated_until?: string | null
+          confirmed_counterfeit?: boolean
+          flagged_at?: string | null
           created_at?: string
         }
         Update: {
@@ -657,6 +664,8 @@ export interface Database {
           last_verified_at?: string
           verification_count?: number
           elevated_until?: string | null
+          confirmed_counterfeit?: boolean
+          flagged_at?: string | null
           created_at?: string
         }
         Relationships: []
@@ -861,6 +870,14 @@ export interface Database {
       active_anomaly_states: {
         Args: { p_since: string }
         Returns: { state: string }[]
+      }
+      admin_confirm_counterfeit: {
+        Args: { p_nafdac_number: string }
+        Returns: undefined
+      }
+      anomaly_states_touched: {
+        Args: { p_nafdac_number: string; p_since: string }
+        Returns: string[]
       }
     }
     Enums: Record<string, never>

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server"
 
 import { createClient } from "@/lib/supabase/server"
+import { requireAdminApi } from "@/lib/supabase/require-admin-api"
 import type { AnomalySeverity, AnomalyType } from "@/types/database"
 
 const VALID_SEVERITIES: AnomalySeverity[] = ["elevated", "high", "critical"]
@@ -17,24 +18,8 @@ const VALID_TYPES: AnomalyType[] = [
 // empty list that could be misread as "no anomalies exist".
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return NextResponse.json(
-      { error: { message: "Unauthorized", code: "unauthorized" } },
-      { status: 401 }
-    )
-  }
-
-  const { data: isAdmin } = await supabase.rpc("is_admin")
-  if (!isAdmin) {
-    return NextResponse.json(
-      { error: { message: "Admin access required", code: "forbidden" } },
-      { status: 403 }
-    )
-  }
+  const authError = await requireAdminApi(supabase)
+  if (authError) return authError
 
   const { searchParams } = new URL(request.url)
   const severity = searchParams.get("severity")
@@ -65,5 +50,22 @@ export async function GET(request: NextRequest) {
     )
   }
 
-  return NextResponse.json({ anomalies: data })
+  // "View details: ... list of states where verifications occurred" (spec).
+  // window_start was recorded on the anomaly itself at detection time
+  // (Module 4), so this answers "which states touched this NAFDAC number
+  // during the window that triggered this specific anomaly" rather than
+  // some arbitrary lookback.
+  const anomaliesWithStates = await Promise.all(
+    (data ?? []).map(async (anomaly) => {
+      const windowStart =
+        (anomaly.details as Record<string, unknown> | null)?.window_start ?? anomaly.created_at
+      const { data: states } = await supabase.rpc("anomaly_states_touched", {
+        p_nafdac_number: anomaly.nafdac_number,
+        p_since: typeof windowStart === "string" ? windowStart : anomaly.created_at,
+      })
+      return { ...anomaly, states_touched: states ?? [] }
+    })
+  )
+
+  return NextResponse.json({ anomalies: anomaliesWithStates })
 }

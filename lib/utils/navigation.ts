@@ -8,6 +8,10 @@ import {
   Settings,
   History,
   Flag,
+  Users,
+  Activity,
+  Barcode,
+  Map,
 } from "lucide-react"
 
 export const navIcons = {
@@ -21,6 +25,10 @@ export const navIcons = {
   verify: ShieldCheck,
   history: History,
   report: Flag,
+  users: Users,
+  anomalies: Activity,
+  gs1: Barcode,
+  intelligence: Map,
 } as const
 
 export type IconName = keyof typeof navIcons
@@ -47,4 +55,15 @@ export const consumerNavItems: NavItem[] = [
   { label: "History", href: "/consumer/history", icon: "history" },
   { label: "Report a Product", href: "/consumer/report", icon: "report" },
   { label: "Settings", href: "/consumer/settings", icon: "settings" },
+]
+
+export const adminNavItems: NavItem[] = [
+  { label: "Overview", href: "/admin", icon: "dashboard" },
+  { label: "Users", href: "/admin/users", icon: "users" },
+  { label: "Counterfeit Reports", href: "/admin/reports", icon: "reports" },
+  { label: "Recall Management", href: "/admin/recalls", icon: "recalls" },
+  { label: "Anomalies", href: "/admin/anomalies", icon: "anomalies" },
+  { label: "GS1 Database", href: "/admin/gs1", icon: "gs1" },
+  { label: "Geographic Intelligence", href: "/admin/intelligence", icon: "intelligence" },
+  { label: "Platform Settings", href: "/admin/settings", icon: "settings" },
 ]

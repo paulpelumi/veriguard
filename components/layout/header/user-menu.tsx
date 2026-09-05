@@ -48,7 +48,8 @@ export function UserMenu({ fullName, email, role }: UserMenuProps) {
     window.location.href = "/"
   }
 
-  const settingsHref = role === "business" ? "/business/settings" : "/consumer/settings"
+  const settingsHref =
+    role === "business" ? "/business/settings" : role === "admin" ? "/admin/settings" : "/consumer/settings"
 
   return (
     <DropdownMenu>

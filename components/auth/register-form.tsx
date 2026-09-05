@@ -22,10 +22,12 @@ import { createClient } from "@/lib/supabase/client"
 import { businessTypeOptions } from "@/lib/utils/constants"
 import { nigerianStates } from "@/lib/utils/nigerian-states"
 import { registerSchema, type RegisterFormValues } from "@/lib/validations/auth"
-import type { UserRole } from "@/types/database"
 
 interface RegisterFormProps {
-  defaultRole: UserRole
+  // Intentionally narrower than the full UserRole union - public signup
+  // only ever offers consumer/business (matching registerSchema's own
+  // z.enum). "manufacturer" and "admin" are never self-selectable here.
+  defaultRole: RegisterFormValues["role"]
 }
 
 export function RegisterForm({ defaultRole }: RegisterFormProps) {
@@ -89,7 +91,7 @@ export function RegisterForm({ defaultRole }: RegisterFormProps) {
     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-5">
       <Tabs
         value={role}
-        onValueChange={(value) => form.setValue("role", value as UserRole)}
+        onValueChange={(value) => form.setValue("role", value as RegisterFormValues["role"])}
       >
         <TabsList className="w-full">
           <TabsTrigger value="consumer" className="flex-1">

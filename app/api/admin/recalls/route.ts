@@ -1,33 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server"
 
 import { createClient } from "@/lib/supabase/server"
+import { requireAdminApi as requireAdmin } from "@/lib/supabase/require-admin-api"
 import type { Database, RecallSeverity } from "@/types/database"
 
 type RecallAlertUpdate = Database["public"]["Tables"]["recall_alerts"]["Update"]
 
 const VALID_SEVERITIES: RecallSeverity[] = ["low", "medium", "high", "critical"]
-
-type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>
-
-async function requireAdmin(supabase: SupabaseServerClient) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) {
-    return NextResponse.json(
-      { error: { message: "Unauthorized", code: "unauthorized" } },
-      { status: 401 }
-    )
-  }
-  const { data: isAdmin } = await supabase.rpc("is_admin")
-  if (!isAdmin) {
-    return NextResponse.json(
-      { error: { message: "Admin access required", code: "forbidden" } },
-      { status: 403 }
-    )
-  }
-  return null
-}
 
 // CRUD for the admin recall management page (Module 7): view all scraped
 // recalls, edit auto-detected ones, manually add recalls that weren't

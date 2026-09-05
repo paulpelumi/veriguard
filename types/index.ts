@@ -72,6 +72,11 @@ export interface NafdacVerificationResult {
   // status, since it's an independent activity signal, not a registration
   // problem.
   elevated_monitoring?: boolean
+  // Present when an admin has confirmed a counterfeit report against this
+  // number (Module 7). Forces status to "verified_with_warnings" even with
+  // zero ordinary mismatches, so a confirmed-counterfeit number never shows
+  // the plain green card.
+  confirmed_counterfeit?: boolean
 }
 
 export type SerialVerificationStatus =

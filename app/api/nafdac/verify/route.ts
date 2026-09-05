@@ -203,7 +203,12 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    const status = statusFromMismatches(mismatches)
+    // An admin-confirmed counterfeit (Module 7) always shows the warning
+    // treatment, even if this particular request found zero ordinary
+    // mismatches - the confirmation itself is a stronger signal than
+    // anything detectMismatches/GS1 can infer.
+    const isConfirmedCounterfeit = cached?.confirmed_counterfeit ?? false
+    const status = isConfirmedCounterfeit ? "verified_with_warnings" : statusFromMismatches(mismatches)
 
     return {
       status,
@@ -227,6 +232,7 @@ export async function POST(request: NextRequest) {
       // fresh live scrape doesn't touch elevated_until), so this is accurate
       // for every result path: cache hit, stale-cache fallback, and live.
       elevated_monitoring: isUnderElevatedMonitoring(cached?.elevated_until ?? null),
+      confirmed_counterfeit: isConfirmedCounterfeit,
     }
   }
 
