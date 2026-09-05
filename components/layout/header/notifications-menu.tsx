@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -19,7 +20,9 @@ export function NotificationsMenu() {
         <span className="sr-only">Notifications</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-72">
-        <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <p className="px-2 py-6 text-center text-sm text-muted-foreground">
           You&apos;re all caught up.

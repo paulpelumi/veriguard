@@ -40,6 +40,7 @@ export async function updateSession(request: NextRequest) {
 
   if (!user && !isPublicRoute) {
     const redirectUrl = request.nextUrl.clone()
+    redirectUrl.search = ""
     redirectUrl.pathname = "/login"
     redirectUrl.searchParams.set("redirectTo", pathname)
     return NextResponse.redirect(redirectUrl)
@@ -53,6 +54,7 @@ export async function updateSession(request: NextRequest) {
       .single()
 
     const redirectUrl = request.nextUrl.clone()
+    redirectUrl.search = ""
     redirectUrl.pathname =
       profile?.role === "business" ? "/business/dashboard" : "/consumer/dashboard"
     return NextResponse.redirect(redirectUrl)
@@ -70,12 +72,14 @@ export async function updateSession(request: NextRequest) {
 
     if (isBusinessRoute && profile?.role !== "business") {
       const redirectUrl = request.nextUrl.clone()
+      redirectUrl.search = ""
       redirectUrl.pathname = "/consumer/dashboard"
       return NextResponse.redirect(redirectUrl)
     }
 
     if (isConsumerRoute && profile?.role !== "consumer") {
       const redirectUrl = request.nextUrl.clone()
+      redirectUrl.search = ""
       redirectUrl.pathname = "/business/dashboard"
       return NextResponse.redirect(redirectUrl)
     }
