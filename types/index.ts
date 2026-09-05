@@ -66,8 +66,8 @@ export interface NafdacVerificationResult {
   coverage_gap?: boolean
   // Present only when the verification request included a scanned barcode.
   gs1_check?: Gs1CrossCheckResult
-  // Present when this number has an active critical anomaly flag (Module 4)
-  // - shown regardless of the underlying verified/verified_with_warnings
+  // Present when this number has an active anomaly flag (Module 4) - shown
+  // regardless of the underlying verified/verified_with_warnings
   // status, since it's an independent activity signal, not a registration
   // problem.
   elevated_monitoring?: boolean

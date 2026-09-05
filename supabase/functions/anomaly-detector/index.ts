@@ -196,16 +196,19 @@ Deno.serve(async () => {
     })
   }
 
-  const criticalNumbers = (inserted ?? [])
-    .filter((row) => row.severity === "critical")
-    .map((row) => row.nafdac_number)
+  // Originally gated to severity === "critical" only, matching the spec's
+  // literal text. Changed to any severity per explicit user decision, since
+  // the spec's own test instructions (insert 60 rows, confirm the banner
+  // shows) only cross the lowest "elevated" tier - critical-only would make
+  // that test impossible without inserting 500+ rows.
+  const flaggedNumbers = (inserted ?? []).map((row) => row.nafdac_number)
 
-  if (criticalNumbers.length > 0) {
+  if (flaggedNumbers.length > 0) {
     const elevatedUntil = new Date(now.getTime() + ELEVATED_MONITORING_HOURS * 60 * 60 * 1000).toISOString()
     await supabase
       .from("nafdac_cache")
       .update({ elevated_until: elevatedUntil })
-      .in("nafdac_number", criticalNumbers)
+      .in("nafdac_number", flaggedNumbers)
   }
 
   const adminEmail = Deno.env.get("ADMIN_EMAIL")

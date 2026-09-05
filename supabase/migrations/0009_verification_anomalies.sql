@@ -37,11 +37,15 @@ alter table public.verification_anomalies enable row level security;
 create policy "Admin can manage anomalies"
   on public.verification_anomalies for all using (public.is_admin());
 
--- Elevated-monitoring window: when a critical anomaly is detected for a
--- number, its verification result should carry a warning for 72 hours
--- (spec) regardless of whether the underlying registration is otherwise
--- clean. nafdac_cache is the natural home for this since every verification
--- of that number already reads it.
+-- Elevated-monitoring window: when an anomaly of any severity is detected
+-- for a number, its verification result should carry a warning for 72 hours
+-- regardless of whether the underlying registration is otherwise clean.
+-- (The spec's own prose limits this to "critical" anomalies, but its test
+-- instructions - insert 60 rows, confirm the banner shows - only cross the
+-- lowest "elevated" tier; any-severity was chosen so that test actually
+-- works as written. See supabase/functions/anomaly-detector/index.ts.)
+-- nafdac_cache is the natural home for this since every verification of
+-- that number already reads it.
 alter table public.nafdac_cache
   add column if not exists elevated_until timestamptz;
 
