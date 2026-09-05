@@ -1,7 +1,7 @@
 import { CalendarClock } from "lucide-react"
 
 import { EmptyState } from "@/components/shared/empty-state"
-import { ExpiryBadge } from "@/components/shared/expiry-badge"
+import { ExpiryBadge } from "@/components/inventory/expiry-badge"
 import { formatDate } from "@/lib/utils/date"
 
 export interface ExpiryAlertItem {
