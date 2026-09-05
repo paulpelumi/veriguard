@@ -11,6 +11,15 @@ import type { SerialVerificationResult } from "@/types"
 // it could be a customer re-scanning their own item (benign), or the same
 // code cloned onto multiple counterfeit units (not benign) - we surface the
 // fact honestly and let the human judge, rather than asserting counterfeit.
+//
+// The actual scan-tracking write (status/scan_count/first_scanned_* update
+// + serial_scan_events insert) happens atomically inside the
+// record_serial_scan() Postgres function, not via direct table writes -
+// these tables only grant clients read access via RLS. Writing directly
+// would let any authenticated user reset a serial's status via a raw REST
+// call, defeating the whole anti-counterfeiting signal. The function also
+// row-locks the serial during the check, closing a race where two
+// simultaneous scans could both believe they're the legitimate first one.
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
   const {
@@ -34,22 +43,29 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const { data: serialRow, error: serialError } = await supabase
-    .from("product_serials")
-    .select(
-      "id, batch_id, serial_code, status, first_scanned_at, first_scanned_by, first_scanned_location, scan_count"
-    )
-    .eq("serial_code", serial)
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("state, lga")
+    .eq("id", user.id)
     .maybeSingle()
 
-  if (serialError) {
+  const { data: scanRows, error: scanError } = await supabase.rpc("record_serial_scan", {
+    p_serial_code: serial,
+    p_location_state: profile?.state ?? undefined,
+    p_location_lga: profile?.lga ?? undefined,
+    p_scan_source: "web",
+  })
+
+  if (scanError) {
     return NextResponse.json(
-      { error: { message: serialError.message, code: "db_error" } },
+      { error: { message: scanError.message, code: "db_error" } },
       { status: 500 }
     )
   }
 
-  if (!serialRow) {
+  const scan = scanRows?.[0]
+
+  if (!scan) {
     const result: SerialVerificationResult = {
       status: "not_found",
       serial,
@@ -66,7 +82,7 @@ export async function POST(request: NextRequest) {
   const { data: batch } = await supabase
     .from("serialised_products")
     .select("manufacturer_id, nafdac_number, product_name, batch_number, expiry_date")
-    .eq("id", serialRow.batch_id)
+    .eq("id", scan.batch_id)
     .maybeSingle()
 
   const { data: manufacturer } = batch
@@ -77,42 +93,8 @@ export async function POST(request: NextRequest) {
         .maybeSingle()
     : { data: null }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("state, lga")
-    .eq("id", user.id)
-    .maybeSingle()
-
-  const isFirstScan = serialRow.status === "unscanned"
-  const newScanCount = (serialRow.scan_count ?? 0) + 1
-  const nowIso = new Date().toISOString()
-
-  await supabase.from("serial_scan_events").insert({
-    serial_id: serialRow.id,
-    scanned_by: user.id,
-    location_state: profile?.state ?? null,
-    location_lga: profile?.lga ?? null,
-    scan_source: "web",
-    result: isFirstScan ? "first_scan" : "duplicate",
-  })
-
-  await supabase
-    .from("product_serials")
-    .update(
-      isFirstScan
-        ? {
-            status: "first_scanned",
-            first_scanned_at: nowIso,
-            first_scanned_by: user.id,
-            first_scanned_location: profile?.state ?? null,
-            scan_count: newScanCount,
-          }
-        : { scan_count: newScanCount }
-    )
-    .eq("id", serialRow.id)
-
   const result: SerialVerificationResult = {
-    status: isFirstScan ? "verified_first_scan" : "verified_duplicate_scan",
+    status: scan.is_first_scan ? "verified_first_scan" : "verified_duplicate_scan",
     serial,
     product: batch
       ? {
@@ -125,11 +107,11 @@ export async function POST(request: NextRequest) {
     manufacturer: manufacturer
       ? { name: manufacturer.company_name, is_verified: manufacturer.is_verified }
       : null,
-    scan_count: newScanCount,
-    first_scanned_at: isFirstScan ? nowIso : serialRow.first_scanned_at,
-    message: isFirstScan
+    scan_count: scan.new_scan_count,
+    first_scanned_at: scan.first_scanned_at,
+    message: scan.is_first_scan
       ? "This is the first scan of this serial code - a strong signal of authenticity."
-      : `This serial code has been scanned ${newScanCount} time(s), first on ${serialRow.first_scanned_at ? new Date(serialRow.first_scanned_at).toLocaleDateString() : "an earlier date"}. Seeing the same code on multiple physical products is a counterfeiting red flag - though re-scanning your own item is also normal.`,
+      : `This serial code has been scanned ${scan.new_scan_count} time(s), first on ${scan.first_scanned_at ? new Date(scan.first_scanned_at).toLocaleDateString() : "an earlier date"}. Seeing the same code on multiple physical products is a counterfeiting red flag - though re-scanning your own item is also normal.`,
   }
 
   return NextResponse.json(result)

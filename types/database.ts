@@ -684,6 +684,21 @@ export interface Database {
         Args: { p_nafdac_number: string }
         Returns: undefined
       }
+      record_serial_scan: {
+        Args: {
+          p_serial_code: string
+          p_location_state?: string
+          p_location_lga?: string
+          p_scan_source?: ScanEventSource
+        }
+        Returns: {
+          serial_id: string
+          batch_id: string
+          is_first_scan: boolean
+          new_scan_count: number
+          first_scanned_at: string | null
+        }[]
+      }
     }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>
