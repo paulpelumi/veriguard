@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { AlertTriangle, CalendarClock, ShieldAlert, ShieldCheck } from "lucide-react"
+import { AlertTriangle, Activity, CalendarClock, ShieldAlert, ShieldCheck } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { formatDate } from "@/lib/utils/date"
@@ -12,6 +12,7 @@ const typeIcons: Record<NotificationType, typeof CalendarClock> = {
   recall_alert: AlertTriangle,
   verification_complete: ShieldCheck,
   counterfeit_confirmed: ShieldAlert,
+  verification_anomaly: Activity,
 }
 
 interface NotificationItemProps {

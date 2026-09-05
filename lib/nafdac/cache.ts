@@ -9,6 +9,14 @@ export function isCacheFresh(lastVerifiedAt: string): boolean {
   return Date.now() - new Date(lastVerifiedAt).getTime() < CACHE_MAX_AGE_MS
 }
 
+// A critical anomaly (Module 4) sets nafdac_cache.elevated_until 72 hours
+// into the future; this stays true until that window passes or an admin
+// resolves the anomaly and clears the column.
+export function isUnderElevatedMonitoring(elevatedUntil: string | null): boolean {
+  if (!elevatedUntil) return false
+  return new Date(elevatedUntil).getTime() > Date.now()
+}
+
 export async function getCachedEntry(
   supabase: SupabaseClient<Database>,
   nafdacNumber: string

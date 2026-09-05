@@ -11,6 +11,27 @@ import type { NafdacVerificationResult } from "@/types"
 
 const GREENBOOK_URL = "https://greenbook.nafdac.gov.ng"
 
+// Shown on top of either a "verified" or "verified_with_warnings" card when
+// the number has an active critical anomaly flag (Module 4) - this is an
+// activity signal independent of the registration status itself, so it
+// layers onto both outcomes rather than being its own card state.
+function ElevatedMonitoringBanner() {
+  return (
+    <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
+      <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
+      <div>
+        <p className="font-semibold uppercase tracking-wide text-destructive">
+          Elevated Monitoring
+        </p>
+        <p className="text-foreground">
+          This product is currently under elevated monitoring due to unusual verification
+          activity. Proceed with caution.
+        </p>
+      </div>
+    </div>
+  )
+}
+
 interface VerificationResultCardProps {
   result: NafdacVerificationResult
   onRetry: () => void
@@ -33,6 +54,7 @@ export function VerificationResultCard({
     return (
       <Card className="border-warning/30 bg-warning/5">
         <CardContent className="flex flex-col gap-3">
+          {result.elevated_monitoring && <ElevatedMonitoringBanner />}
           <div className="flex items-center gap-2 text-warning">
             <ShieldAlert className="size-5" />
             <span className="text-sm font-semibold tracking-wide uppercase">
@@ -94,6 +116,7 @@ export function VerificationResultCard({
     return (
       <Card className="border-success/30 bg-success/5">
         <CardContent className="flex flex-col gap-3">
+          {result.elevated_monitoring && <ElevatedMonitoringBanner />}
           <div className="flex items-center gap-2 text-success">
             <CheckCircle2 className="size-5" />
             <span className="text-sm font-semibold tracking-wide uppercase">

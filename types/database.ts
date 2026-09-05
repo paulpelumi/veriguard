@@ -43,6 +43,14 @@ export type NotificationType =
   | "recall_alert"
   | "verification_complete"
   | "counterfeit_confirmed"
+  | "verification_anomaly"
+
+export type AnomalyType =
+  | "high_frequency"
+  | "geographic_spike"
+  | "velocity_spike"
+  | "multi_state_surge"
+export type AnomalySeverity = "elevated" | "high" | "critical"
 
 export interface Database {
   public: {
@@ -605,6 +613,7 @@ export interface Database {
           source: NafdacCacheSource
           last_verified_at: string
           verification_count: number
+          elevated_until: string | null
           created_at: string
         }
         Insert: {
@@ -618,6 +627,7 @@ export interface Database {
           source?: NafdacCacheSource
           last_verified_at?: string
           verification_count?: number
+          elevated_until?: string | null
           created_at?: string
         }
         Update: {
@@ -631,6 +641,52 @@ export interface Database {
           source?: NafdacCacheSource
           last_verified_at?: string
           verification_count?: number
+          elevated_until?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      verification_anomalies: {
+        Row: {
+          id: string
+          nafdac_number: string
+          anomaly_type: AnomalyType
+          severity: AnomalySeverity
+          verification_count: number
+          unique_users: number | null
+          distinct_states: number | null
+          time_window_hours: number
+          details: Record<string, unknown> | null
+          is_resolved: boolean
+          resolved_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          nafdac_number: string
+          anomaly_type: AnomalyType
+          severity: AnomalySeverity
+          verification_count: number
+          unique_users?: number | null
+          distinct_states?: number | null
+          time_window_hours: number
+          details?: Record<string, unknown> | null
+          is_resolved?: boolean
+          resolved_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          nafdac_number?: string
+          anomaly_type?: AnomalyType
+          severity?: AnomalySeverity
+          verification_count?: number
+          unique_users?: number | null
+          distinct_states?: number | null
+          time_window_hours?: number
+          details?: Record<string, unknown> | null
+          is_resolved?: boolean
+          resolved_at?: string | null
           created_at?: string
         }
         Relationships: []
@@ -729,6 +785,18 @@ export interface Database {
       is_admin: {
         Args: Record<string, never>
         Returns: boolean
+      }
+      anomaly_frequency_stats: {
+        Args: { p_since: string }
+        Returns: { nafdac_number: string; verification_count: number; unique_users: number }[]
+      }
+      anomaly_geo_stats: {
+        Args: { p_since: string }
+        Returns: { nafdac_number: string; distinct_states: number }[]
+      }
+      anomaly_baseline_stats: {
+        Args: { p_since: string; p_until: string }
+        Returns: { nafdac_number: string; baseline_daily_avg: number }[]
       }
     }
     Enums: Record<string, never>

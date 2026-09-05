@@ -1,7 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server"
 
 import { crossCheckGs1WithNafdac, extractGs1Prefix, lookupGs1Company } from "@/lib/gs1/prefix-checker"
-import { getCachedEntry, isCacheFresh, recordCacheHit, upsertCachedEntry } from "@/lib/nafdac/cache"
+import {
+  getCachedEntry,
+  isCacheFresh,
+  isUnderElevatedMonitoring,
+  recordCacheHit,
+  upsertCachedEntry,
+} from "@/lib/nafdac/cache"
 import { getMockProduct } from "@/lib/nafdac/mock-data"
 import { detectMismatches } from "@/lib/nafdac/mismatch-detector"
 import { searchNafdacGreenbook, type ScrapeAttemptLog } from "@/lib/nafdac/scraper"
@@ -203,6 +209,10 @@ export async function POST(request: NextRequest) {
       timestamp,
       source,
       gs1_check: gs1Check,
+      // `cached` reflects whatever was on record before this request (a
+      // fresh live scrape doesn't touch elevated_until), so this is accurate
+      // for every result path: cache hit, stale-cache fallback, and live.
+      elevated_monitoring: isUnderElevatedMonitoring(cached?.elevated_until ?? null),
     }
   }
 

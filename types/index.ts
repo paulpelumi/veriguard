@@ -17,6 +17,7 @@ export type ManufacturerProfile = Database["public"]["Tables"]["manufacturer_pro
 export type SerialisedProduct = Database["public"]["Tables"]["serialised_products"]["Row"]
 export type ProductSerial = Database["public"]["Tables"]["product_serials"]["Row"]
 export type SerialScanEvent = Database["public"]["Tables"]["serial_scan_events"]["Row"]
+export type VerificationAnomaly = Database["public"]["Tables"]["verification_anomalies"]["Row"]
 
 export type NafdacVerificationStatus =
   | "verified"
@@ -65,6 +66,11 @@ export interface NafdacVerificationResult {
   coverage_gap?: boolean
   // Present only when the verification request included a scanned barcode.
   gs1_check?: Gs1CrossCheckResult
+  // Present when this number has an active critical anomaly flag (Module 4)
+  // - shown regardless of the underlying verified/verified_with_warnings
+  // status, since it's an independent activity signal, not a registration
+  // problem.
+  elevated_monitoring?: boolean
 }
 
 export type SerialVerificationStatus =
