@@ -46,6 +46,7 @@ export function ProductVerificationPanel({
   const [value, setValue] = useState(initialNumber ?? "")
   const [productType, setProductType] = useState<string | null>(null)
   const [labelCompany, setLabelCompany] = useState("")
+  const [manualBarcode, setManualBarcode] = useState("")
   const [isVerifying, setIsVerifying] = useState(false)
   const [result, setResult] = useState<NafdacVerificationResult | null>(null)
   const [serialResult, setSerialResult] = useState<SerialVerificationResult | null>(null)
@@ -120,6 +121,7 @@ export function ProductVerificationPanel({
     setValue("")
     setProductType(null)
     setLabelCompany("")
+    setManualBarcode("")
   }
 
   function handleReportIssue() {
@@ -137,7 +139,7 @@ export function ProductVerificationPanel({
   async function dispatchScannedValue(format: ScanFormat, scannedValue: string) {
     if (format === "nafdac_number") {
       setValue(scannedValue)
-      handleVerify(scannedValue)
+      handleVerify(scannedValue, manualBarcode.trim() || undefined)
       return
     }
 
@@ -262,6 +264,12 @@ export function ProductVerificationPanel({
             value={labelCompany}
             onChange={(event) => setLabelCompany(event.target.value)}
             placeholder="Company on label (optional — helps detect misuse)"
+          />
+
+          <Input
+            value={manualBarcode}
+            onChange={(event) => setManualBarcode(event.target.value)}
+            placeholder="EAN barcode (optional — enables GS1 manufacturer cross-check)"
           />
 
           {isVerifying ? (
