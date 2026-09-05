@@ -120,7 +120,7 @@ export function ProductVerificationPanel() {
             </p>
           )}
 
-          <Select value={productType ?? undefined} onValueChange={setProductType}>
+          <Select value={productType} onValueChange={setProductType}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Product category (optional — improves accuracy)" />
             </SelectTrigger>
