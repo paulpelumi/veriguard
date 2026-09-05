@@ -290,6 +290,9 @@ export interface Database {
           severity: RecallSeverity | null
           issued_date: string | null
           source_url: string | null
+          scraped_at: string | null
+          raw_content: string | null
+          auto_detected: boolean
           is_active: boolean
           created_at: string
         }
@@ -302,6 +305,9 @@ export interface Database {
           severity?: RecallSeverity | null
           issued_date?: string | null
           source_url?: string | null
+          scraped_at?: string | null
+          raw_content?: string | null
+          auto_detected?: boolean
           is_active?: boolean
           created_at?: string
         }
@@ -314,6 +320,9 @@ export interface Database {
           severity?: RecallSeverity | null
           issued_date?: string | null
           source_url?: string | null
+          scraped_at?: string | null
+          raw_content?: string | null
+          auto_detected?: boolean
           is_active?: boolean
           created_at?: string
         }
