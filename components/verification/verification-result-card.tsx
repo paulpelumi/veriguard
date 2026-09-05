@@ -73,7 +73,12 @@ export function VerificationResultCard({
             <Button variant="destructive" size="sm" onClick={onReportIssue}>
               Report as Suspicious
             </Button>
-            <Button variant="outline" size="sm" render={<a href={GREENBOOK_URL} target="_blank" rel="noreferrer" />}>
+            <Button
+              variant="outline"
+              size="sm"
+              nativeButton={false}
+              render={<a href={GREENBOOK_URL} target="_blank" rel="noreferrer" />}
+            >
               View NAFDAC Record
             </Button>
           </div>
