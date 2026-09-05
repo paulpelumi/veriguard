@@ -7,6 +7,7 @@ import {
   FileBarChart,
   Settings,
   History,
+  Flag,
 } from "lucide-react"
 
 export const navIcons = {
@@ -19,6 +20,7 @@ export const navIcons = {
   settings: Settings,
   verify: ShieldCheck,
   history: History,
+  report: Flag,
 } as const
 
 export type IconName = keyof typeof navIcons
@@ -43,5 +45,6 @@ export const consumerNavItems: NavItem[] = [
   { label: "Dashboard", href: "/consumer/dashboard", icon: "dashboard" },
   { label: "Verify Product", href: "/consumer/verify", icon: "verify" },
   { label: "History", href: "/consumer/history", icon: "history" },
+  { label: "Report a Product", href: "/consumer/report", icon: "report" },
   { label: "Settings", href: "/consumer/settings", icon: "settings" },
 ]

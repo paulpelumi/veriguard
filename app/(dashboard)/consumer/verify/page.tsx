@@ -10,7 +10,7 @@ export default function ConsumerVerifyPage() {
         </p>
       </div>
       <div className="mx-auto w-full max-w-xl sm:mx-0">
-        <ProductVerificationPanel />
+        <ProductVerificationPanel reportPath="/consumer/report" />
       </div>
     </div>
   )

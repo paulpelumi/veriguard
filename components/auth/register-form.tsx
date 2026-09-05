@@ -19,7 +19,8 @@ import {
 } from "@/components/ui/select"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { createClient } from "@/lib/supabase/client"
-import { businessTypeOptions, nigerianStates } from "@/lib/utils/constants"
+import { businessTypeOptions } from "@/lib/utils/constants"
+import { nigerianStates } from "@/lib/utils/nigerian-states"
 import { registerSchema, type RegisterFormValues } from "@/lib/validations/auth"
 import type { UserRole } from "@/types/database"
 

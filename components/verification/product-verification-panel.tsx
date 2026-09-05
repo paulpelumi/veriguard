@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { ScanLine, ShieldCheck } from "lucide-react"
 import { toast } from "sonner"
 
@@ -24,7 +25,12 @@ import type { NafdacVerificationResult, VerificationLog } from "@/types"
 
 const RECENT_LIMIT = 5
 
-export function ProductVerificationPanel() {
+interface ProductVerificationPanelProps {
+  reportPath: string
+}
+
+export function ProductVerificationPanel({ reportPath }: ProductVerificationPanelProps) {
+  const router = useRouter()
   const [value, setValue] = useState("")
   const [productType, setProductType] = useState<string | null>(null)
   const [isVerifying, setIsVerifying] = useState(false)
@@ -88,7 +94,12 @@ export function ProductVerificationPanel() {
   }
 
   function handleReportIssue() {
-    toast.info("Counterfeit reporting is coming with the Reporting module.")
+    const params = new URLSearchParams()
+    if (result?.nafdac_number) params.set("nafdacNumber", result.nafdac_number)
+    if (result?.status === "verified" && result.product?.name) {
+      params.set("productName", result.product.name)
+    }
+    router.push(`${reportPath}?${params.toString()}`)
   }
 
   async function handleScanResult(scannedValue: string) {

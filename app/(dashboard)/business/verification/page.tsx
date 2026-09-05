@@ -10,7 +10,7 @@ export default function BusinessVerificationPage() {
         </p>
       </div>
       <div className="max-w-2xl">
-        <ProductVerificationPanel />
+        <ProductVerificationPanel reportPath="/business/reports" />
       </div>
     </div>
   )
