@@ -237,7 +237,7 @@ Deno.serve(async () => {
   return new Response(
     JSON.stringify({
       anomalies_detected: inserted?.length ?? 0,
-      critical_elevated: criticalNumbers.length,
+      elevated_count: flaggedNumbers.length,
       notifications_created: notificationsCreated,
     }),
     { status: 200 }
