@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react"
 import { ScanLine, ShieldCheck } from "lucide-react"
 import { toast } from "sonner"
 
+import { BarcodeScanner } from "@/components/verification/barcode-scanner"
 import { RecentVerificationsList } from "@/components/verification/recent-verifications-list"
 import { VerificationResultCard } from "@/components/verification/verification-result-card"
 import { Button } from "@/components/ui/button"
@@ -29,6 +30,7 @@ export function ProductVerificationPanel() {
   const [isVerifying, setIsVerifying] = useState(false)
   const [result, setResult] = useState<NafdacVerificationResult | null>(null)
   const [recentLogs, setRecentLogs] = useState<VerificationLog[]>([])
+  const [scannerOpen, setScannerOpen] = useState(false)
 
   const hasFormatError = value.trim().length > 0 && !isValidNafdacFormat(value)
 
@@ -89,8 +91,31 @@ export function ProductVerificationPanel() {
     toast.info("Counterfeit reporting is coming with the Reporting module.")
   }
 
-  function handleScanBarcode() {
-    toast.info("Barcode scanning is coming next.")
+  async function handleScanResult(scannedValue: string) {
+    setScannerOpen(false)
+
+    if (isValidNafdacFormat(scannedValue)) {
+      setValue(scannedValue)
+      handleVerify(scannedValue)
+      return
+    }
+
+    // Not a NAFDAC-format value - likely a retail barcode (EAN-13, etc).
+    // Try to resolve it; Phase 2 has no real mapping yet, so this just
+    // surfaces that clearly rather than guessing.
+    try {
+      const response = await fetch("/api/nafdac/resolve-barcode", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ barcode: scannedValue }),
+      })
+      const data = await response.json()
+      setValue(scannedValue)
+      toast.info(data.message ?? "Couldn't resolve this barcode to a NAFDAC number yet.")
+    } catch {
+      setValue(scannedValue)
+      toast.error("Couldn't resolve the scanned barcode.")
+    }
   }
 
   return (
@@ -108,7 +133,12 @@ export function ProductVerificationPanel() {
               className="flex-1 text-base"
               aria-invalid={hasFormatError}
             />
-            <Button variant="outline" size="icon" onClick={handleScanBarcode} aria-label="Scan barcode">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setScannerOpen(true)}
+              aria-label="Scan barcode"
+            >
               <ScanLine className="size-4" />
             </Button>
           </div>
@@ -168,6 +198,12 @@ export function ProductVerificationPanel() {
           <RecentVerificationsList logs={recentLogs} />
         </CardContent>
       </Card>
+
+      <BarcodeScanner
+        open={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onScan={handleScanResult}
+      />
     </div>
   )
 }
