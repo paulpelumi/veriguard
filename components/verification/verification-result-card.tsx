@@ -85,6 +85,27 @@ export function VerificationResultCard({
     )
   }
 
+  if (result.status === "not_found" && result.coverage_gap) {
+    return (
+      <Card className="border-warning/30 bg-warning/5">
+        <CardContent className="flex flex-col gap-3">
+          <div className="flex items-center gap-2 text-warning">
+            <AlertTriangle className="size-5" />
+            <span className="text-sm font-semibold tracking-wide uppercase">
+              Category Not Covered
+            </span>
+          </div>
+          <p className="text-sm text-foreground">{result.message}</p>
+          <div className="flex flex-wrap gap-2 pt-1">
+            <Button variant="outline" size="sm" onClick={onTryDifferent}>
+              Try Different Number
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
   if (result.status === "not_found") {
     return (
       <Card className="border-destructive/30 bg-destructive/5">

@@ -9,14 +9,23 @@ import { VerificationResultCard } from "@/components/verification/verification-r
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { isValidNafdacFormat } from "@/lib/nafdac/validator"
 import { createClient } from "@/lib/supabase/client"
+import { productTypeOptions } from "@/lib/validations/inventory"
 import type { NafdacVerificationResult, VerificationLog } from "@/types"
 
 const RECENT_LIMIT = 5
 
 export function ProductVerificationPanel() {
   const [value, setValue] = useState("")
+  const [productType, setProductType] = useState<string | null>(null)
   const [isVerifying, setIsVerifying] = useState(false)
   const [result, setResult] = useState<NafdacVerificationResult | null>(null)
   const [recentLogs, setRecentLogs] = useState<VerificationLog[]>([])
@@ -58,7 +67,7 @@ export function ProductVerificationPanel() {
       const response = await fetch("/api/nafdac/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nafdacNumber }),
+        body: JSON.stringify({ nafdacNumber, productType: productType ?? undefined }),
       })
       const data: NafdacVerificationResult = await response.json()
       setResult(data)
@@ -73,6 +82,7 @@ export function ProductVerificationPanel() {
   function handleTryDifferent() {
     setResult(null)
     setValue("")
+    setProductType(null)
   }
 
   function handleReportIssue() {
@@ -109,6 +119,19 @@ export function ProductVerificationPanel() {
                 : "Format looks good."}
             </p>
           )}
+
+          <Select value={productType ?? undefined} onValueChange={setProductType}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Product category (optional — improves accuracy)" />
+            </SelectTrigger>
+            <SelectContent>
+              {productTypeOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
           {isVerifying ? (
             <div className="flex flex-col items-center justify-center gap-2 py-4">

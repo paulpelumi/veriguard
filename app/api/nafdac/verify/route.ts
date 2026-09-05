@@ -2,7 +2,11 @@ import { NextResponse, type NextRequest } from "next/server"
 
 import { getMockProduct } from "@/lib/nafdac/mock-data"
 import { searchNafdacGreenbook } from "@/lib/nafdac/scraper"
-import { isValidNafdacFormat, normalizeNafdacNumber } from "@/lib/nafdac/validator"
+import {
+  isCategoryCoveredByGreenbook,
+  isValidNafdacFormat,
+  normalizeNafdacNumber,
+} from "@/lib/nafdac/validator"
 import { createClient } from "@/lib/supabase/server"
 import type {
   LogVerificationStatus,
@@ -33,6 +37,7 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json().catch(() => null)
   const rawNumber = typeof body?.nafdacNumber === "string" ? body.nafdacNumber : ""
+  const productType = typeof body?.productType === "string" ? body.productType : undefined
   const timestamp = new Date().toISOString()
 
   if (!rawNumber.trim()) {
@@ -103,13 +108,24 @@ export async function POST(request: NextRequest) {
       }
     }
   } else if (!scrapeResult.found) {
-    result = {
-      status: "not_found",
-      nafdac_number: nafdacNumber,
-      message: `No NAFDAC registration found for ${nafdacNumber}. This product may be counterfeit or unregistered.`,
-      timestamp,
-      source: "nafdac_live",
-    }
+    const covered = isCategoryCoveredByGreenbook(productType)
+    result = covered
+      ? {
+          status: "not_found",
+          nafdac_number: nafdacNumber,
+          message: `No NAFDAC registration found for ${nafdacNumber}. This product may be counterfeit or unregistered.`,
+          timestamp,
+          source: "nafdac_live",
+        }
+      : {
+          status: "not_found",
+          nafdac_number: nafdacNumber,
+          message:
+            "NAFDAC's public registry currently covers Drugs, Vaccines, Medical Devices, Veterinary, Herbal, and Disinfectant products. This category isn't in that data source yet, so this result doesn't necessarily mean the product is unregistered.",
+          timestamp,
+          source: "nafdac_live",
+          coverage_gap: true,
+        }
   } else {
     result = {
       status: "verified",

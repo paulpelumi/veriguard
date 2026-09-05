@@ -32,6 +32,10 @@ export interface NafdacVerificationResult {
   message: string
   timestamp: string
   source: NafdacVerificationSource
+  // True when status is "not_found" only because the queried product
+  // category (e.g. food, drink, cosmetic) isn't covered by NAFDAC's public
+  // Greenbook registry - not because the number is actually unregistered.
+  coverage_gap?: boolean
 }
 
 export interface ApiErrorResponse {

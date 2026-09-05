@@ -202,14 +202,20 @@ export function useInventory(businessId: string | null) {
         const response = await fetch("/api/nafdac/verify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ nafdacNumber: item.nafdac_number }),
+          body: JSON.stringify({
+            nafdacNumber: item.nafdac_number,
+            productType: item.product_type,
+          }),
         })
         const result: NafdacVerificationResult = await response.json()
 
+        // A "not found" caused by a registry coverage gap (e.g. food/drink
+        // products aren't in NAFDAC's public drug registry) isn't evidence
+        // the product is unverified - leave it pending rather than failed.
         const newStatus: VerificationStatus =
           result.status === "verified"
             ? "verified"
-            : result.status === "not_found"
+            : result.status === "not_found" && !result.coverage_gap
               ? "failed"
               : "pending"
 
@@ -235,7 +241,7 @@ export function useInventory(businessId: string | null) {
         toast.dismiss(toastId)
         if (result.status === "verified") {
           toast.success(`Verified: ${result.product?.name ?? item.product_name}`)
-        } else if (result.status === "not_found") {
+        } else if (result.status === "not_found" && !result.coverage_gap) {
           toast.error(result.message)
         } else {
           toast.warning(result.message)

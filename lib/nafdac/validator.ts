@@ -10,3 +10,16 @@ export function isValidNafdacFormat(value: string): boolean {
 export function normalizeNafdacNumber(value: string): string {
   return value.trim().toUpperCase()
 }
+
+// The NAFDAC Greenbook's own category filter only covers these categories
+// (confirmed against the live portal - Food/Drink/general Cosmetics return
+// zero results even for genuinely registered products, because that data
+// simply isn't in this particular registry). A "not found" result for a
+// product outside this list doesn't mean it's unregistered or counterfeit -
+// it means this data source doesn't carry that category at all.
+const GREENBOOK_COVERED_TYPES = new Set(["drug", "herbal", "medical_device"])
+
+export function isCategoryCoveredByGreenbook(productType: string | undefined | null): boolean {
+  if (!productType) return true // unknown category: don't assume a gap
+  return GREENBOOK_COVERED_TYPES.has(productType)
+}
