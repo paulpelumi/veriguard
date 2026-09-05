@@ -1,6 +1,6 @@
 import { HeaderSearch } from "@/components/layout/header/header-search"
-import { NotificationsMenu } from "@/components/layout/header/notifications-menu"
 import { UserMenu } from "@/components/layout/header/user-menu"
+import { NotificationBell } from "@/components/notifications/notification-bell"
 import { MobileNav } from "@/components/layout/mobile-nav/mobile-nav"
 import { ThemeToggle } from "@/components/shared/theme-toggle"
 import type { NavItem } from "@/lib/utils/navigation"
@@ -21,7 +21,7 @@ export function Header({ navItems, homeHref, fullName, email, role }: HeaderProp
       <HeaderSearch />
       <div className="ml-auto flex items-center gap-1">
         <ThemeToggle />
-        <NotificationsMenu />
+        <NotificationBell />
         <UserMenu fullName={fullName} email={email} role={role} />
       </div>
     </header>

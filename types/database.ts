@@ -29,6 +29,12 @@ export type ReportStatus = "pending" | "reviewed" | "confirmed" | "dismissed"
 
 export type RecallSeverity = "low" | "medium" | "high" | "critical"
 
+export type NotificationType =
+  | "expiry_warning"
+  | "recall_alert"
+  | "verification_complete"
+  | "counterfeit_confirmed"
+
 export interface Database {
   public: {
     Tables: {
@@ -295,6 +301,112 @@ export interface Database {
           created_at?: string
         }
         Relationships: []
+      }
+      alert_settings: {
+        Row: {
+          id: string
+          business_id: string
+          expiry_alerts_enabled: boolean
+          alert_90_days: boolean
+          alert_60_days: boolean
+          alert_30_days: boolean
+          alert_expired: boolean
+          email_alerts: boolean
+          per_category_thresholds: boolean
+          drug_alert_days: number
+          food_alert_days: number
+          cosmetic_alert_days: number
+          drink_alert_days: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          business_id: string
+          expiry_alerts_enabled?: boolean
+          alert_90_days?: boolean
+          alert_60_days?: boolean
+          alert_30_days?: boolean
+          alert_expired?: boolean
+          email_alerts?: boolean
+          per_category_thresholds?: boolean
+          drug_alert_days?: number
+          food_alert_days?: number
+          cosmetic_alert_days?: number
+          drink_alert_days?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          business_id?: string
+          expiry_alerts_enabled?: boolean
+          alert_90_days?: boolean
+          alert_60_days?: boolean
+          alert_30_days?: boolean
+          alert_expired?: boolean
+          email_alerts?: boolean
+          per_category_thresholds?: boolean
+          drug_alert_days?: number
+          food_alert_days?: number
+          cosmetic_alert_days?: number
+          drink_alert_days?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alert_settings_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          id: string
+          user_id: string
+          type: NotificationType
+          title: string
+          message: string
+          link: string | null
+          is_read: boolean
+          metadata: Record<string, unknown> | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          type: NotificationType
+          title: string
+          message: string
+          link?: string | null
+          is_read?: boolean
+          metadata?: Record<string, unknown> | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          type?: NotificationType
+          title?: string
+          message?: string
+          link?: string | null
+          is_read?: boolean
+          metadata?: Record<string, unknown> | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: Record<string, never>

@@ -7,6 +7,8 @@ export type InventoryItem = Database["public"]["Tables"]["inventory"]["Row"]
 export type VerificationLog = Database["public"]["Tables"]["verification_logs"]["Row"]
 export type CounterfeitReport = Database["public"]["Tables"]["counterfeit_reports"]["Row"]
 export type RecallAlert = Database["public"]["Tables"]["recall_alerts"]["Row"]
+export type AlertSettings = Database["public"]["Tables"]["alert_settings"]["Row"]
+export type Notification = Database["public"]["Tables"]["notifications"]["Row"]
 
 export type NafdacVerificationStatus =
   | "verified"
