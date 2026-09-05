@@ -18,6 +18,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  detectScanFormat,
+  parseScanUrl,
+  resolveEanBarcode,
+  resolveVeriGuardSerial,
+  type ScanFormat,
+} from "@/lib/nafdac/format-detector"
 import { isValidNafdacFormat } from "@/lib/nafdac/validator"
 import { createClient } from "@/lib/supabase/client"
 import { productTypeOptions } from "@/lib/validations/inventory"
@@ -115,31 +122,64 @@ export function ProductVerificationPanel({
     router.push(`${reportPath}?${params.toString()}`)
   }
 
-  async function handleScanResult(scannedValue: string) {
-    setScannerOpen(false)
-
-    if (isValidNafdacFormat(scannedValue)) {
+  async function dispatchScannedValue(format: ScanFormat, scannedValue: string) {
+    if (format === "nafdac_number") {
       setValue(scannedValue)
       handleVerify(scannedValue)
       return
     }
 
-    // Not a NAFDAC-format value - likely a retail barcode (EAN-13, etc).
-    // Try to resolve it; Phase 2 has no real mapping yet, so this just
-    // surfaces that clearly rather than guessing.
-    try {
-      const response = await fetch("/api/nafdac/resolve-barcode", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ barcode: scannedValue }),
-      })
-      const data = await response.json()
+    if (format === "veriguard_serial") {
       setValue(scannedValue)
-      toast.info(data.message ?? "Couldn't resolve this barcode to a NAFDAC number yet.")
-    } catch {
-      setValue(scannedValue)
-      toast.error("Couldn't resolve the scanned barcode.")
+      try {
+        const data = await resolveVeriGuardSerial(scannedValue)
+        toast.info(data.message)
+      } catch {
+        toast.error("Couldn't check this VeriGuard serial. Try again.")
+      }
+      return
     }
+
+    if (format === "ean_barcode") {
+      setValue(scannedValue)
+      try {
+        const data = await resolveEanBarcode(scannedValue)
+        if (data.nafdac_number) {
+          setValue(data.nafdac_number)
+          handleVerify(data.nafdac_number)
+        } else {
+          toast.info(data.message)
+        }
+      } catch {
+        toast.error("Couldn't resolve the scanned barcode.")
+      }
+      return
+    }
+
+    // Unknown format: hand the raw value to the user in the input rather
+    // than guessing - they can edit it into a valid NAFDAC number if the
+    // scanner misread something.
+    setValue(scannedValue)
+    toast.info("Couldn't identify this code. You can type the NAFDAC number in manually.")
+  }
+
+  async function handleScanResult(scannedValue: string) {
+    setScannerOpen(false)
+
+    const format = detectScanFormat(scannedValue)
+
+    if (format === "qr_url") {
+      const parsed = parseScanUrl(scannedValue)
+      if (parsed) {
+        await dispatchScannedValue(parsed.format, parsed.value)
+      } else {
+        setValue(scannedValue)
+        toast.info("This QR code doesn't link to a recognizable product or serial.")
+      }
+      return
+    }
+
+    await dispatchScannedValue(format, scannedValue)
   }
 
   return (
