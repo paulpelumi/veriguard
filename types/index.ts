@@ -11,6 +11,10 @@ export type AlertSettings = Database["public"]["Tables"]["alert_settings"]["Row"
 export type Notification = Database["public"]["Tables"]["notifications"]["Row"]
 export type NafdacCache = Database["public"]["Tables"]["nafdac_cache"]["Row"]
 export type ScrapeLog = Database["public"]["Tables"]["scrape_logs"]["Row"]
+export type ManufacturerProfile = Database["public"]["Tables"]["manufacturer_profiles"]["Row"]
+export type SerialisedProduct = Database["public"]["Tables"]["serialised_products"]["Row"]
+export type ProductSerial = Database["public"]["Tables"]["product_serials"]["Row"]
+export type SerialScanEvent = Database["public"]["Tables"]["serial_scan_events"]["Row"]
 
 export type NafdacVerificationStatus =
   | "verified"
@@ -53,6 +57,30 @@ export interface NafdacVerificationResult {
   // category (e.g. food, drink, cosmetic) isn't covered by NAFDAC's public
   // Greenbook registry - not because the number is actually unregistered.
   coverage_gap?: boolean
+}
+
+export type SerialVerificationStatus =
+  | "verified_first_scan"
+  | "verified_duplicate_scan"
+  | "not_found"
+  | "error"
+
+export interface SerialVerificationResult {
+  status: SerialVerificationStatus
+  serial: string
+  product: {
+    name: string
+    nafdac_number: string
+    batch_number: string
+    expiry_date: string
+  } | null
+  manufacturer: {
+    name: string
+    is_verified: boolean
+  } | null
+  scan_count: number
+  first_scanned_at: string | null
+  message: string
 }
 
 export interface ApiErrorResponse {

@@ -33,6 +33,11 @@ export type NafdacCacheSource = "live" | "manual"
 
 export type ScrapeLogResult = "success" | "timeout" | "not_found" | "parse_error" | "network_error"
 
+export type SerialisedProductStatus = "pending" | "active" | "completed" | string
+export type ProductSerialStatus = "unscanned" | "first_scanned" | string
+export type ScanEventSource = "web" | "whatsapp" | "api"
+export type ScanEventResult = "first_scan" | "duplicate" | string
+
 export type NotificationType =
   | "expiry_warning"
   | "recall_alert"
@@ -364,6 +369,182 @@ export interface Database {
             columns: ["business_id"]
             isOneToOne: true
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      manufacturer_profiles: {
+        Row: {
+          id: string
+          company_name: string
+          nafdac_manufacturer_code: string | null
+          registration_document_url: string | null
+          is_verified: boolean
+          verified_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id: string
+          company_name: string
+          nafdac_manufacturer_code?: string | null
+          registration_document_url?: string | null
+          is_verified?: boolean
+          verified_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          company_name?: string
+          nafdac_manufacturer_code?: string | null
+          registration_document_url?: string | null
+          is_verified?: boolean
+          verified_at?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manufacturer_profiles_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      serialised_products: {
+        Row: {
+          id: string
+          manufacturer_id: string
+          nafdac_number: string
+          product_name: string
+          batch_number: string
+          production_date: string
+          expiry_date: string
+          total_units: number
+          codes_generated: number
+          status: SerialisedProductStatus
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          manufacturer_id: string
+          nafdac_number: string
+          product_name: string
+          batch_number: string
+          production_date: string
+          expiry_date: string
+          total_units: number
+          codes_generated?: number
+          status?: SerialisedProductStatus
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          manufacturer_id?: string
+          nafdac_number?: string
+          product_name?: string
+          batch_number?: string
+          production_date?: string
+          expiry_date?: string
+          total_units?: number
+          codes_generated?: number
+          status?: SerialisedProductStatus
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "serialised_products_manufacturer_id_fkey"
+            columns: ["manufacturer_id"]
+            isOneToOne: false
+            referencedRelation: "manufacturer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_serials: {
+        Row: {
+          id: string
+          batch_id: string
+          serial_code: string
+          status: ProductSerialStatus
+          first_scanned_at: string | null
+          first_scanned_by: string | null
+          first_scanned_location: string | null
+          scan_count: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          batch_id: string
+          serial_code: string
+          status?: ProductSerialStatus
+          first_scanned_at?: string | null
+          first_scanned_by?: string | null
+          first_scanned_location?: string | null
+          scan_count?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          batch_id?: string
+          serial_code?: string
+          status?: ProductSerialStatus
+          first_scanned_at?: string | null
+          first_scanned_by?: string | null
+          first_scanned_location?: string | null
+          scan_count?: number
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_serials_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "serialised_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      serial_scan_events: {
+        Row: {
+          id: string
+          serial_id: string
+          scanned_by: string | null
+          scanned_at: string
+          location_state: string | null
+          location_lga: string | null
+          scan_source: ScanEventSource
+          result: ScanEventResult
+          device_info: string | null
+        }
+        Insert: {
+          id?: string
+          serial_id: string
+          scanned_by?: string | null
+          scanned_at?: string
+          location_state?: string | null
+          location_lga?: string | null
+          scan_source?: ScanEventSource
+          result: ScanEventResult
+          device_info?: string | null
+        }
+        Update: {
+          id?: string
+          serial_id?: string
+          scanned_by?: string | null
+          scanned_at?: string
+          location_state?: string | null
+          location_lga?: string | null
+          scan_source?: ScanEventSource
+          result?: ScanEventResult
+          device_info?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "serial_scan_events_serial_id_fkey"
+            columns: ["serial_id"]
+            isOneToOne: false
+            referencedRelation: "product_serials"
             referencedColumns: ["id"]
           },
         ]

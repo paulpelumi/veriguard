@@ -133,7 +133,23 @@ export function ProductVerificationPanel({
       setValue(scannedValue)
       try {
         const data = await resolveVeriGuardSerial(scannedValue)
-        toast.info(data.message)
+        if (data.status === "verified_first_scan") {
+          toast.success(
+            data.product
+              ? `${data.product.name} — first scan verified (${data.manufacturer?.name ?? "manufacturer unknown"})`
+              : data.message
+          )
+        } else if (data.status === "verified_duplicate_scan") {
+          toast.warning(
+            data.product
+              ? `${data.product.name}: scanned ${data.scan_count} time(s) already — see details in message.`
+              : data.message
+          )
+        } else if (data.status === "not_found") {
+          toast.error(data.message)
+        } else {
+          toast.info(data.message)
+        }
       } catch {
         toast.error("Couldn't check this VeriGuard serial. Try again.")
       }

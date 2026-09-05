@@ -1,5 +1,5 @@
 import { isValidNafdacFormat } from "@/lib/nafdac/validator"
-import type { NafdacVerificationResult } from "@/types"
+import type { NafdacVerificationResult, SerialVerificationResult } from "@/types"
 
 export type ScanFormat =
   | "veriguard_serial" // Starts with "VG-" e.g. VG-2025-NE-000247
@@ -72,13 +72,6 @@ export function parseScanUrl(url: string): ParsedScanUrl | null {
   }
 
   return null
-}
-
-export interface SerialVerificationResult {
-  status: string
-  serial: string
-  parsed: { year: string; regionCode: string; sequence: string } | null
-  message: string
 }
 
 export interface BarcodeResolutionResult {
