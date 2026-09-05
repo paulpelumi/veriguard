@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { LogOut, Settings } from "lucide-react"
 
@@ -36,15 +35,16 @@ function getInitials(fullName: string | null, email: string) {
 }
 
 export function UserMenu({ fullName, email, role }: UserMenuProps) {
-  const router = useRouter()
   const [isSigningOut, setIsSigningOut] = useState(false)
 
   async function handleSignOut() {
     setIsSigningOut(true)
     const supabase = createClient()
     await supabase.auth.signOut()
-    router.push("/login")
-    router.refresh()
+    // Hard navigation clears all client-side state/cache and guarantees
+    // the proxy re-evaluates the (now signed-out) session from scratch.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+    window.location.href = "/"
   }
 
   const settingsHref = role === "business" ? "/business/settings" : "/consumer/settings"
