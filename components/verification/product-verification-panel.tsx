@@ -25,7 +25,6 @@ import {
   resolveVeriGuardSerial,
   type ScanFormat,
 } from "@/lib/nafdac/format-detector"
-import { isValidNafdacFormat } from "@/lib/nafdac/validator"
 import { createClient } from "@/lib/supabase/client"
 import { productTypeOptions } from "@/lib/validations/inventory"
 import type { NafdacVerificationResult, VerificationLog } from "@/types"
@@ -50,7 +49,16 @@ export function ProductVerificationPanel({
   const [recentLogs, setRecentLogs] = useState<VerificationLog[]>([])
   const [scannerOpen, setScannerOpen] = useState(false)
 
-  const hasFormatError = value.trim().length > 0 && !isValidNafdacFormat(value)
+  const trimmedValue = value.trim()
+  const detectedFormat = trimmedValue ? detectScanFormat(trimmedValue) : null
+  const hasFormatError = detectedFormat === "unknown"
+  const formatHint: Record<ScanFormat, string> = {
+    nafdac_number: "NAFDAC number format looks good.",
+    veriguard_serial: "VeriGuard serial code detected.",
+    ean_barcode: "Barcode detected — we'll try to resolve it to a NAFDAC number.",
+    qr_url: "URL detected — we'll try to extract a code from it.",
+    unknown: "Format looks off — try a NAFDAC number (A1-1234) or a VeriGuard serial (VG-...).",
+  }
 
   const fetchRecent = useCallback(async () => {
     const supabase = createClient()
@@ -131,6 +139,7 @@ export function ProductVerificationPanel({
 
     if (format === "veriguard_serial") {
       setValue(scannedValue)
+      setIsVerifying(true)
       try {
         const data = await resolveVeriGuardSerial(scannedValue)
         if (data.status === "verified_first_scan") {
@@ -152,22 +161,32 @@ export function ProductVerificationPanel({
         }
       } catch {
         toast.error("Couldn't check this VeriGuard serial. Try again.")
+      } finally {
+        setIsVerifying(false)
       }
       return
     }
 
     if (format === "ean_barcode") {
       setValue(scannedValue)
+      setIsVerifying(true)
+      let nafdacNumberFromBarcode: string | null = null
       try {
         const data = await resolveEanBarcode(scannedValue)
         if (data.nafdac_number) {
-          setValue(data.nafdac_number)
-          handleVerify(data.nafdac_number)
+          nafdacNumberFromBarcode = data.nafdac_number
         } else {
           toast.info(data.message)
         }
       } catch {
         toast.error("Couldn't resolve the scanned barcode.")
+      } finally {
+        setIsVerifying(false)
+      }
+
+      if (nafdacNumberFromBarcode) {
+        setValue(nafdacNumberFromBarcode)
+        handleVerify(nafdacNumberFromBarcode)
       }
       return
     }
@@ -179,23 +198,31 @@ export function ProductVerificationPanel({
     toast.info("Couldn't identify this code. You can type the NAFDAC number in manually.")
   }
 
-  async function handleScanResult(scannedValue: string) {
-    setScannerOpen(false)
-
-    const format = detectScanFormat(scannedValue)
+  async function processInput(rawValue: string) {
+    // Clear any stale NAFDAC result card before processing a new input,
+    // regardless of which path it ends up taking (a leftover card from a
+    // previous NAFDAC check would otherwise sit under an unrelated serial/
+    // barcode toast).
+    setResult(null)
+    const format = detectScanFormat(rawValue)
 
     if (format === "qr_url") {
-      const parsed = parseScanUrl(scannedValue)
+      const parsed = parseScanUrl(rawValue)
       if (parsed) {
         await dispatchScannedValue(parsed.format, parsed.value)
       } else {
-        setValue(scannedValue)
+        setValue(rawValue)
         toast.info("This QR code doesn't link to a recognizable product or serial.")
       }
       return
     }
 
-    await dispatchScannedValue(format, scannedValue)
+    await dispatchScannedValue(format, rawValue)
+  }
+
+  async function handleScanResult(scannedValue: string) {
+    setScannerOpen(false)
+    await processInput(scannedValue)
   }
 
   return (
@@ -222,11 +249,9 @@ export function ProductVerificationPanel({
               <ScanLine className="size-4" />
             </Button>
           </div>
-          {value.trim().length > 0 && (
+          {detectedFormat && (
             <p className={hasFormatError ? "text-sm text-destructive" : "text-sm text-muted-foreground"}>
-              {hasFormatError
-                ? "Format looks off — try e.g. A1-1234 or 04-12345"
-                : "Format looks good."}
+              {formatHint[detectedFormat]}
             </p>
           )}
 
@@ -252,14 +277,14 @@ export function ProductVerificationPanel({
           {isVerifying ? (
             <div className="flex flex-col items-center justify-center gap-2 py-4">
               <ShieldCheck className="size-8 animate-pulse text-primary" />
-              <p className="text-sm text-muted-foreground">Verifying with NAFDAC...</p>
+              <p className="text-sm text-muted-foreground">Verifying...</p>
             </div>
           ) : (
             <Button
               size="lg"
               className="w-full"
-              disabled={!value.trim() || hasFormatError}
-              onClick={() => handleVerify()}
+              disabled={!trimmedValue || hasFormatError}
+              onClick={() => processInput(trimmedValue)}
             >
               Verify Product
             </Button>

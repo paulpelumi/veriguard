@@ -52,15 +52,31 @@ interface GreenbookRow {
   form?: { name?: string }
 }
 
+// Greenbook's own data contains literal HTML entities (e.g. "BG Pharma
+// &amp; Healthcare Limited") rather than the actual characters - this
+// decodes the handful that show up in practice in product/company names.
+const HTML_ENTITIES: Record<string, string> = {
+  "&amp;": "&",
+  "&apos;": "'",
+  "&quot;": '"',
+  "&lt;": "<",
+  "&gt;": ">",
+  "&#039;": "'",
+}
+
+function decodeHtmlEntities(value: string): string {
+  return value.replace(/&amp;|&apos;|&quot;|&lt;|&gt;|&#039;/g, (match) => HTML_ENTITIES[match])
+}
+
 function cleanProductName(name: string): string {
-  return name.replace(/[#*]/g, "").trim()
+  return decodeHtmlEntities(name.replace(/[#*]/g, "").trim())
 }
 
 function toProduct(row: GreenbookRow, fallbackNumber: string): NafdacProduct {
   return {
     name: cleanProductName(row.product_name ?? "Unknown product"),
-    company: row.applicant?.name ?? "Unknown company",
-    category: row.product_category?.name ?? "Unknown",
+    company: decodeHtmlEntities(row.applicant?.name ?? "Unknown company"),
+    category: decodeHtmlEntities(row.product_category?.name ?? "Unknown"),
     registrationNumber: row.NAFDAC ?? fallbackNumber,
     additionalInfo: {
       status: row.status ?? "",
