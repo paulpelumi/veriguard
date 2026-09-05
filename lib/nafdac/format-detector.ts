@@ -107,7 +107,7 @@ export async function resolveVeriGuardSerial(serial: string): Promise<SerialVeri
 
 export async function resolveNafdacNumber(
   nafdacNumber: string,
-  options?: { productType?: string; labelCompany?: string }
+  options?: { productType?: string; labelCompany?: string; barcode?: string }
 ): Promise<NafdacVerificationResult> {
   const response = await fetch("/api/nafdac/verify", {
     method: "POST",

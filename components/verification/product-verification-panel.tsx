@@ -87,7 +87,7 @@ export function ProductVerificationPanel({
     fetchRecent()
   }, [fetchRecent])
 
-  async function handleVerify(numberOverride?: string) {
+  async function handleVerify(numberOverride?: string, scannedBarcode?: string) {
     const nafdacNumber = (numberOverride ?? value).trim()
     if (!nafdacNumber) return
 
@@ -99,6 +99,7 @@ export function ProductVerificationPanel({
       const data = await resolveNafdacNumber(nafdacNumber, {
         productType: productType ?? undefined,
         labelCompany: labelCompany.trim() || undefined,
+        barcode: scannedBarcode,
       })
       setResult(data)
       fetchRecent()
@@ -173,7 +174,9 @@ export function ProductVerificationPanel({
 
       if (nafdacNumberFromBarcode) {
         setValue(nafdacNumberFromBarcode)
-        handleVerify(nafdacNumberFromBarcode)
+        // Passing the original barcode through lets the verify route run a
+        // GS1 manufacturer cross-check against the resolved NAFDAC company.
+        handleVerify(nafdacNumberFromBarcode, scannedValue)
       }
       return
     }

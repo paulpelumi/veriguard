@@ -665,6 +665,33 @@ export interface Database {
         }
         Relationships: []
       }
+      gs1_prefixes: {
+        Row: {
+          id: string
+          prefix: string
+          company_name: string
+          country_code: string
+          is_verified: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          prefix: string
+          company_name: string
+          country_code?: string
+          is_verified?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          prefix?: string
+          company_name?: string
+          country_code?: string
+          is_verified?: boolean
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: {
@@ -698,6 +725,10 @@ export interface Database {
           new_scan_count: number
           first_scanned_at: string | null
         }[]
+      }
+      is_admin: {
+        Args: Record<string, never>
+        Returns: boolean
       }
     }
     Enums: Record<string, never>

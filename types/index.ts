@@ -1,4 +1,5 @@
 import type { Database } from "@/types/database"
+import type { Gs1CrossCheckResult } from "@/lib/gs1/gs1-types"
 
 export * from "@/types/database"
 
@@ -11,6 +12,7 @@ export type AlertSettings = Database["public"]["Tables"]["alert_settings"]["Row"
 export type Notification = Database["public"]["Tables"]["notifications"]["Row"]
 export type NafdacCache = Database["public"]["Tables"]["nafdac_cache"]["Row"]
 export type ScrapeLog = Database["public"]["Tables"]["scrape_logs"]["Row"]
+export type GS1Prefix = Database["public"]["Tables"]["gs1_prefixes"]["Row"]
 export type ManufacturerProfile = Database["public"]["Tables"]["manufacturer_profiles"]["Row"]
 export type SerialisedProduct = Database["public"]["Tables"]["serialised_products"]["Row"]
 export type ProductSerial = Database["public"]["Tables"]["product_serials"]["Row"]
@@ -34,7 +36,11 @@ export interface NafdacVerificationProduct {
   additional_info?: Record<string, string>
 }
 
-export type MismatchType = "category_mismatch" | "company_mismatch" | "format_mismatch"
+export type MismatchType =
+  | "category_mismatch"
+  | "company_mismatch"
+  | "format_mismatch"
+  | "gs1_company_mismatch"
 export type MismatchSeverity = "warning" | "critical"
 
 export interface NafdacMismatch {
@@ -57,6 +63,8 @@ export interface NafdacVerificationResult {
   // category (e.g. food, drink, cosmetic) isn't covered by NAFDAC's public
   // Greenbook registry - not because the number is actually unregistered.
   coverage_gap?: boolean
+  // Present only when the verification request included a scanned barcode.
+  gs1_check?: Gs1CrossCheckResult
 }
 
 export type SerialVerificationStatus =

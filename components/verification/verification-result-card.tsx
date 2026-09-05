@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { AlertTriangle, CheckCircle2, ChevronDown, RefreshCw, ShieldAlert } from "lucide-react"
+import { AlertTriangle, CheckCircle2, ChevronDown, Factory, RefreshCw, ShieldAlert } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -111,6 +111,13 @@ export function VerificationResultCard({
           <p className="text-sm text-foreground">
             This product is registered with NAFDAC and is authentic.
           </p>
+
+          {result.gs1_check?.match === "confirmed" && (
+            <div className="flex items-center gap-1.5 border-t border-success/20 pt-3 text-sm text-foreground">
+              <Factory className="size-4 shrink-0 text-success" />
+              GS1 Barcode: Confirmed — Registered to {result.gs1_check.gs1_company}
+            </div>
+          )}
 
           {details.length > 0 && (
             <div>

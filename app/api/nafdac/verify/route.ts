@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server"
 
+import { crossCheckGs1WithNafdac, extractGs1Prefix, lookupGs1Company } from "@/lib/gs1/prefix-checker"
 import { getCachedEntry, isCacheFresh, recordCacheHit, upsertCachedEntry } from "@/lib/nafdac/cache"
 import { getMockProduct } from "@/lib/nafdac/mock-data"
 import { detectMismatches } from "@/lib/nafdac/mismatch-detector"
@@ -17,6 +18,7 @@ import type {
   NafdacVerificationResult,
   NafdacVerificationStatus,
 } from "@/types"
+import type { Gs1CrossCheckResult } from "@/lib/gs1/gs1-types"
 import type { ProductType } from "@/types/database"
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>
@@ -92,6 +94,11 @@ export async function POST(request: NextRequest) {
     typeof body?.labelCompany === "string" && body.labelCompany.trim()
       ? body.labelCompany.trim()
       : undefined
+  // Present when this verification originated from an EAN-13 barcode scan
+  // (Module 2) - lets us cross-check the barcode's GS1 manufacturer prefix
+  // against the NAFDAC-registered company for the resolved number.
+  const barcode: string | undefined =
+    typeof body?.barcode === "string" && body.barcode.trim() ? body.barcode.trim() : undefined
   const timestamp = new Date().toISOString()
 
   if (!rawNumber.trim()) {
@@ -121,14 +128,33 @@ export async function POST(request: NextRequest) {
     return respond(result, 400)
   }
 
-  function buildVerifiedResult(
+  async function runGs1CrossCheck(companyName: string): Promise<Gs1CrossCheckResult | undefined> {
+    if (!barcode) return undefined
+
+    const eligiblePrefix = extractGs1Prefix(barcode)
+    if (!eligiblePrefix) {
+      return {
+        match: "not_nigerian",
+        gs1_company: null,
+        nafdac_company: companyName,
+        confidence: "low",
+        message:
+          "This barcode doesn't carry a Nigeria-assigned GS1 country prefix, so no cross-check was performed.",
+      }
+    }
+
+    const gs1Company = await lookupGs1Company(supabase, eligiblePrefix)
+    return crossCheckGs1WithNafdac(gs1Company, companyName)
+  }
+
+  async function buildVerifiedResult(
     rawProductName: string,
     rawCompanyName: string,
     rawProductCategory: string,
     additionalInfo: Record<string, string> | undefined,
     source: NafdacVerificationResult["source"],
     previousCategory?: string | null
-  ): NafdacVerificationResult {
+  ): Promise<NafdacVerificationResult> {
     // Decoded here (not just at scrape time) so cache entries written
     // before this fix existed still display correctly - the decode is a
     // no-op on text that's already clean.
@@ -145,6 +171,17 @@ export async function POST(request: NextRequest) {
           previousCategory,
         })
       : []
+
+    const gs1Check = await runGs1CrossCheck(companyName)
+    if (gs1Check?.match === "mismatch") {
+      mismatches.push({
+        type: "gs1_company_mismatch",
+        expected: gs1Check.gs1_company ?? "unknown",
+        found: companyName,
+        severity: "critical",
+        message: gs1Check.message,
+      })
+    }
 
     const status = statusFromMismatches(mismatches)
 
@@ -165,6 +202,7 @@ export async function POST(request: NextRequest) {
           : "This product is registered with NAFDAC and is authentic.",
       timestamp,
       source,
+      gs1_check: gs1Check,
     }
   }
 
@@ -172,7 +210,7 @@ export async function POST(request: NextRequest) {
 
   if (cached && isCacheFresh(cached.last_verified_at)) {
     await recordCacheHit(supabase, nafdacNumber)
-    const result = buildVerifiedResult(
+    const result = await buildVerifiedResult(
       cached.product_name,
       cached.company_name,
       cached.product_category,
@@ -194,12 +232,12 @@ export async function POST(request: NextRequest) {
       // The portal responded but not in the shape we expect - fall back to
       // realistic mock data rather than surfacing a raw parsing failure.
       const mock = getMockProduct(nafdacNumber)
-      result = buildVerifiedResult(mock.name, mock.company, mock.category, undefined, "mock")
+      result = await buildVerifiedResult(mock.name, mock.company, mock.category, undefined, "mock")
     } else if (cached) {
       // All retries failed (timeout/network_error) - per spec, fall back to
       // whatever cache we have regardless of age rather than declaring the
       // service unavailable outright.
-      result = buildVerifiedResult(
+      result = await buildVerifiedResult(
         cached.product_name,
         cached.company_name,
         cached.product_category,
@@ -236,7 +274,7 @@ export async function POST(request: NextRequest) {
           coverage_gap: true,
         }
   } else {
-    result = buildVerifiedResult(
+    result = await buildVerifiedResult(
       scrapeResult.product.name,
       scrapeResult.product.company,
       scrapeResult.product.category,
