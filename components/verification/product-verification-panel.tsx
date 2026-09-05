@@ -7,6 +7,7 @@ import { toast } from "sonner"
 
 import { BarcodeScanner } from "@/components/verification/barcode-scanner"
 import { RecentVerificationsList } from "@/components/verification/recent-verifications-list"
+import { SerialResultCard } from "@/components/verification/serial-result-card"
 import { VerificationResultCard } from "@/components/verification/verification-result-card"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -28,7 +29,7 @@ import {
 } from "@/lib/nafdac/format-detector"
 import { createClient } from "@/lib/supabase/client"
 import { productTypeOptions } from "@/lib/validations/inventory"
-import type { NafdacVerificationResult, VerificationLog } from "@/types"
+import type { NafdacVerificationResult, SerialVerificationResult, VerificationLog } from "@/types"
 
 const RECENT_LIMIT = 5
 
@@ -47,6 +48,7 @@ export function ProductVerificationPanel({
   const [labelCompany, setLabelCompany] = useState("")
   const [isVerifying, setIsVerifying] = useState(false)
   const [result, setResult] = useState<NafdacVerificationResult | null>(null)
+  const [serialResult, setSerialResult] = useState<SerialVerificationResult | null>(null)
   const [recentLogs, setRecentLogs] = useState<VerificationLog[]>([])
   const [scannerOpen, setScannerOpen] = useState(false)
 
@@ -91,6 +93,7 @@ export function ProductVerificationPanel({
 
     setIsVerifying(true)
     setResult(null)
+    setSerialResult(null)
 
     try {
       const data = await resolveNafdacNumber(nafdacNumber, {
@@ -112,6 +115,7 @@ export function ProductVerificationPanel({
 
   function handleTryDifferent() {
     setResult(null)
+    setSerialResult(null)
     setValue("")
     setProductType(null)
     setLabelCompany("")
@@ -141,23 +145,7 @@ export function ProductVerificationPanel({
       setIsVerifying(true)
       try {
         const data = await resolveVeriGuardSerial(scannedValue)
-        if (data.status === "verified_first_scan") {
-          toast.success(
-            data.product
-              ? `${data.product.name} — first scan verified (${data.manufacturer?.name ?? "manufacturer unknown"})`
-              : data.message
-          )
-        } else if (data.status === "verified_duplicate_scan") {
-          toast.warning(
-            data.product
-              ? `${data.product.name}: scanned ${data.scan_count} time(s) already — see details in message.`
-              : data.message
-          )
-        } else if (data.status === "not_found") {
-          toast.error(data.message)
-        } else {
-          toast.info(data.message)
-        }
+        setSerialResult(data)
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Couldn't check this VeriGuard serial.")
       } finally {
@@ -198,11 +186,11 @@ export function ProductVerificationPanel({
   }
 
   async function processInput(rawValue: string) {
-    // Clear any stale NAFDAC result card before processing a new input,
-    // regardless of which path it ends up taking (a leftover card from a
-    // previous NAFDAC check would otherwise sit under an unrelated serial/
-    // barcode toast).
+    // Clear any stale result card before processing a new input, regardless
+    // of which path it ends up taking (a leftover card from a previous
+    // check would otherwise sit under an unrelated new result).
     setResult(null)
+    setSerialResult(null)
     const format = detectScanFormat(rawValue)
 
     if (format === "qr_url") {
@@ -296,6 +284,10 @@ export function ProductVerificationPanel({
               onTryDifferent={handleTryDifferent}
               onReportIssue={handleReportIssue}
             />
+          )}
+
+          {serialResult && !isVerifying && (
+            <SerialResultCard result={serialResult} onTryDifferent={handleTryDifferent} />
           )}
         </CardContent>
       </Card>
