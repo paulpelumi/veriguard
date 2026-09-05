@@ -212,8 +212,11 @@ export function useInventory(businessId: string | null) {
         // A "not found" caused by a registry coverage gap (e.g. food/drink
         // products aren't in NAFDAC's public drug registry) isn't evidence
         // the product is unverified - leave it pending rather than failed.
+        // "verified_with_warnings" is still a registered number (just with
+        // detected inconsistencies), so it counts as verified too - the
+        // warning is surfaced via the toast below, not the status field.
         const newStatus: VerificationStatus =
-          result.status === "verified"
+          result.status === "verified" || result.status === "verified_with_warnings"
             ? "verified"
             : result.status === "not_found" && !result.coverage_gap
               ? "failed"
@@ -241,6 +244,10 @@ export function useInventory(businessId: string | null) {
         toast.dismiss(toastId)
         if (result.status === "verified") {
           toast.success(`Verified: ${result.product?.name ?? item.product_name}`)
+        } else if (result.status === "verified_with_warnings") {
+          toast.warning(
+            `Registered but suspicious: ${result.product?.name ?? item.product_name}. Check the Verification page for details.`
+          )
         } else if (result.status === "not_found" && !result.coverage_gap) {
           toast.error(result.message)
         } else {

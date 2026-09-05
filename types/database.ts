@@ -29,6 +29,10 @@ export type ReportStatus = "pending" | "reviewed" | "confirmed" | "dismissed"
 
 export type RecallSeverity = "low" | "medium" | "high" | "critical"
 
+export type NafdacCacheSource = "live" | "manual"
+
+export type ScrapeLogResult = "success" | "timeout" | "not_found" | "parse_error" | "network_error"
+
 export type NotificationType =
   | "expiry_warning"
   | "recall_alert"
@@ -408,9 +412,98 @@ export interface Database {
           },
         ]
       }
+      nafdac_cache: {
+        Row: {
+          id: string
+          nafdac_number: string
+          product_name: string
+          company_name: string
+          product_category: string
+          registration_status: string
+          additional_info: Record<string, unknown> | null
+          source: NafdacCacheSource
+          last_verified_at: string
+          verification_count: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          nafdac_number: string
+          product_name: string
+          company_name: string
+          product_category: string
+          registration_status: string
+          additional_info?: Record<string, unknown> | null
+          source?: NafdacCacheSource
+          last_verified_at?: string
+          verification_count?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          nafdac_number?: string
+          product_name?: string
+          company_name?: string
+          product_category?: string
+          registration_status?: string
+          additional_info?: Record<string, unknown> | null
+          source?: NafdacCacheSource
+          last_verified_at?: string
+          verification_count?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
+      scrape_logs: {
+        Row: {
+          id: string
+          nafdac_number: string
+          attempt_number: number
+          result: ScrapeLogResult
+          response_time_ms: number | null
+          used_cache: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          nafdac_number: string
+          attempt_number: number
+          result: ScrapeLogResult
+          response_time_ms?: number | null
+          used_cache?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          nafdac_number?: string
+          attempt_number?: number
+          result?: ScrapeLogResult
+          response_time_ms?: number | null
+          used_cache?: boolean
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
-    Functions: Record<string, never>
+    Functions: {
+      upsert_nafdac_cache: {
+        Args: {
+          p_nafdac_number: string
+          p_product_name: string
+          p_company_name: string
+          p_product_category: string
+          p_registration_status: string
+          p_additional_info: Record<string, unknown> | null
+          p_source?: NafdacCacheSource
+        }
+        Returns: Database["public"]["Tables"]["nafdac_cache"]["Row"]
+      }
+      increment_nafdac_cache_hit: {
+        Args: { p_nafdac_number: string }
+        Returns: undefined
+      }
+    }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>
   }

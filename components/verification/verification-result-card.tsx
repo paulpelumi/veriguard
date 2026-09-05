@@ -1,12 +1,15 @@
 "use client"
 
 import { useState } from "react"
-import { AlertTriangle, CheckCircle2, ChevronDown, RefreshCw } from "lucide-react"
+import { AlertTriangle, CheckCircle2, ChevronDown, RefreshCw, ShieldAlert } from "lucide-react"
 
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import type { NafdacVerificationResult } from "@/types"
+
+const GREENBOOK_URL = "https://greenbook.nafdac.gov.ng"
 
 interface VerificationResultCardProps {
   result: NafdacVerificationResult
@@ -22,6 +25,62 @@ export function VerificationResultCard({
   onReportIssue,
 }: VerificationResultCardProps) {
   const [showDetails, setShowDetails] = useState(false)
+
+  if (result.status === "verified_with_warnings" && result.product) {
+    const { product } = result
+    const mismatches = result.mismatches ?? []
+
+    return (
+      <Card className="border-warning/30 bg-warning/5">
+        <CardContent className="flex flex-col gap-3">
+          <div className="flex items-center gap-2 text-warning">
+            <ShieldAlert className="size-5" />
+            <span className="text-sm font-semibold tracking-wide uppercase">
+              Registered But Suspicious
+            </span>
+          </div>
+          <div>
+            <p className="text-lg font-semibold text-foreground">
+              {product.name} — {product.company}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              NAFDAC No: {product.registration_number} | Category: {product.category}
+            </p>
+          </div>
+          <p className="text-sm text-foreground">
+            This NAFDAC number is registered, but inconsistencies were detected:
+          </p>
+          <ul className="flex flex-col gap-2">
+            {mismatches.map((mismatch, index) => (
+              <li key={index} className="flex items-start gap-2 text-sm">
+                <Badge
+                  variant={mismatch.severity === "critical" ? "destructive" : undefined}
+                  className={cn(
+                    "mt-0.5 shrink-0 border-transparent",
+                    mismatch.severity !== "critical" && "bg-warning/10 text-warning"
+                  )}
+                >
+                  {mismatch.severity}
+                </Badge>
+                <span className="text-foreground">{mismatch.message}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="text-sm font-medium text-foreground">
+            Exercise caution. This product may be misusing a valid NAFDAC number.
+          </p>
+          <div className="flex flex-wrap gap-2 pt-1">
+            <Button variant="destructive" size="sm" onClick={onReportIssue}>
+              Report as Suspicious
+            </Button>
+            <Button variant="outline" size="sm" render={<a href={GREENBOOK_URL} target="_blank" rel="noreferrer" />}>
+              View NAFDAC Record
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
   if (result.status === "verified" && result.product) {
     const { product } = result

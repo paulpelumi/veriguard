@@ -9,9 +9,12 @@ export type CounterfeitReport = Database["public"]["Tables"]["counterfeit_report
 export type RecallAlert = Database["public"]["Tables"]["recall_alerts"]["Row"]
 export type AlertSettings = Database["public"]["Tables"]["alert_settings"]["Row"]
 export type Notification = Database["public"]["Tables"]["notifications"]["Row"]
+export type NafdacCache = Database["public"]["Tables"]["nafdac_cache"]["Row"]
+export type ScrapeLog = Database["public"]["Tables"]["scrape_logs"]["Row"]
 
 export type NafdacVerificationStatus =
   | "verified"
+  | "verified_with_warnings"
   | "not_found"
   | "unavailable"
   | "invalid_format"
@@ -27,10 +30,22 @@ export interface NafdacVerificationProduct {
   additional_info?: Record<string, string>
 }
 
+export type MismatchType = "category_mismatch" | "company_mismatch" | "format_mismatch"
+export type MismatchSeverity = "warning" | "critical"
+
+export interface NafdacMismatch {
+  type: MismatchType
+  expected: string
+  found: string
+  severity: MismatchSeverity
+  message: string
+}
+
 export interface NafdacVerificationResult {
   status: NafdacVerificationStatus
   nafdac_number: string
   product?: NafdacVerificationProduct
+  mismatches?: NafdacMismatch[]
   message: string
   timestamp: string
   source: NafdacVerificationSource

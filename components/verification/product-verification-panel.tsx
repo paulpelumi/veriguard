@@ -37,6 +37,7 @@ export function ProductVerificationPanel({
   const router = useRouter()
   const [value, setValue] = useState(initialNumber ?? "")
   const [productType, setProductType] = useState<string | null>(null)
+  const [labelCompany, setLabelCompany] = useState("")
   const [isVerifying, setIsVerifying] = useState(false)
   const [result, setResult] = useState<NafdacVerificationResult | null>(null)
   const [recentLogs, setRecentLogs] = useState<VerificationLog[]>([])
@@ -79,7 +80,11 @@ export function ProductVerificationPanel({
       const response = await fetch("/api/nafdac/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nafdacNumber, productType: productType ?? undefined }),
+        body: JSON.stringify({
+          nafdacNumber,
+          productType: productType ?? undefined,
+          labelCompany: labelCompany.trim() || undefined,
+        }),
       })
       const data: NafdacVerificationResult = await response.json()
       setResult(data)
@@ -95,12 +100,16 @@ export function ProductVerificationPanel({
     setResult(null)
     setValue("")
     setProductType(null)
+    setLabelCompany("")
   }
 
   function handleReportIssue() {
     const params = new URLSearchParams()
     if (result?.nafdac_number) params.set("nafdacNumber", result.nafdac_number)
-    if (result?.status === "verified" && result.product?.name) {
+    if (
+      (result?.status === "verified" || result?.status === "verified_with_warnings") &&
+      result.product?.name
+    ) {
       params.set("productName", result.product.name)
     }
     router.push(`${reportPath}?${params.toString()}`)
@@ -177,6 +186,12 @@ export function ProductVerificationPanel({
               ))}
             </SelectContent>
           </Select>
+
+          <Input
+            value={labelCompany}
+            onChange={(event) => setLabelCompany(event.target.value)}
+            placeholder="Company on label (optional — helps detect misuse)"
+          />
 
           {isVerifying ? (
             <div className="flex flex-col items-center justify-center gap-2 py-4">
