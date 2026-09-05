@@ -80,13 +80,29 @@ export interface BarcodeResolutionResult {
   message: string
 }
 
+// A non-OK response still has a JSON body ({ error: { message, code } }),
+// but it doesn't match the shape callers expect - reading it as if it were
+// a normal result silently produces garbage (e.g. an undefined .message).
+// This surfaces the real error as a thrown Error instead.
+async function parseOrThrow<T>(response: Response): Promise<T> {
+  const data = await response.json().catch(() => null)
+  if (!response.ok) {
+    const message =
+      data && typeof data === "object" && "error" in data
+        ? ((data as { error?: { message?: string } }).error?.message ?? `Request failed (${response.status})`)
+        : `Request failed (${response.status})`
+    throw new Error(message)
+  }
+  return data as T
+}
+
 export async function resolveVeriGuardSerial(serial: string): Promise<SerialVerificationResult> {
   const response = await fetch("/api/serials/verify", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ serial }),
   })
-  return response.json()
+  return parseOrThrow<SerialVerificationResult>(response)
 }
 
 export async function resolveNafdacNumber(
@@ -98,7 +114,7 @@ export async function resolveNafdacNumber(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ nafdacNumber, ...options }),
   })
-  return response.json()
+  return parseOrThrow<NafdacVerificationResult>(response)
 }
 
 export async function resolveEanBarcode(barcode: string): Promise<BarcodeResolutionResult> {
@@ -107,5 +123,5 @@ export async function resolveEanBarcode(barcode: string): Promise<BarcodeResolut
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ barcode }),
   })
-  return response.json()
+  return parseOrThrow<BarcodeResolutionResult>(response)
 }

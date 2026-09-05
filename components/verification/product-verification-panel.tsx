@@ -22,6 +22,7 @@ import {
   detectScanFormat,
   parseScanUrl,
   resolveEanBarcode,
+  resolveNafdacNumber,
   resolveVeriGuardSerial,
   type ScanFormat,
 } from "@/lib/nafdac/format-detector"
@@ -92,20 +93,18 @@ export function ProductVerificationPanel({
     setResult(null)
 
     try {
-      const response = await fetch("/api/nafdac/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          nafdacNumber,
-          productType: productType ?? undefined,
-          labelCompany: labelCompany.trim() || undefined,
-        }),
+      const data = await resolveNafdacNumber(nafdacNumber, {
+        productType: productType ?? undefined,
+        labelCompany: labelCompany.trim() || undefined,
       })
-      const data: NafdacVerificationResult = await response.json()
       setResult(data)
       fetchRecent()
-    } catch {
-      toast.error("Couldn't reach the verification service. Check your connection and try again.")
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Couldn't reach the verification service. Check your connection and try again."
+      )
     } finally {
       setIsVerifying(false)
     }
@@ -159,8 +158,8 @@ export function ProductVerificationPanel({
         } else {
           toast.info(data.message)
         }
-      } catch {
-        toast.error("Couldn't check this VeriGuard serial. Try again.")
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Couldn't check this VeriGuard serial.")
       } finally {
         setIsVerifying(false)
       }
@@ -178,8 +177,8 @@ export function ProductVerificationPanel({
         } else {
           toast.info(data.message)
         }
-      } catch {
-        toast.error("Couldn't resolve the scanned barcode.")
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Couldn't resolve the scanned barcode.")
       } finally {
         setIsVerifying(false)
       }

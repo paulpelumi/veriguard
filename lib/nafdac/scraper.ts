@@ -4,6 +4,7 @@
 // standard query params and returns JSON directly - no HTML parsing needed,
 // and no auth/CSRF is required for a read-only search.
 
+import { decodeHtmlEntities } from "@/lib/utils/html-entities"
 import type { ScrapeLogResult } from "@/types/database"
 
 const GREENBOOK_URL = "https://greenbook.nafdac.gov.ng"
@@ -50,22 +51,6 @@ interface GreenbookRow {
   applicant?: { name?: string }
   product_category?: { name?: string }
   form?: { name?: string }
-}
-
-// Greenbook's own data contains literal HTML entities (e.g. "BG Pharma
-// &amp; Healthcare Limited") rather than the actual characters - this
-// decodes the handful that show up in practice in product/company names.
-const HTML_ENTITIES: Record<string, string> = {
-  "&amp;": "&",
-  "&apos;": "'",
-  "&quot;": '"',
-  "&lt;": "<",
-  "&gt;": ">",
-  "&#039;": "'",
-}
-
-function decodeHtmlEntities(value: string): string {
-  return value.replace(/&amp;|&apos;|&quot;|&lt;|&gt;|&#039;/g, (match) => HTML_ENTITIES[match])
 }
 
 function cleanProductName(name: string): string {

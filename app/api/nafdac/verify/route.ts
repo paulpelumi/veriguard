@@ -10,6 +10,7 @@ import {
   normalizeNafdacNumber,
 } from "@/lib/nafdac/validator"
 import { createClient } from "@/lib/supabase/server"
+import { decodeHtmlEntities } from "@/lib/utils/html-entities"
 import type {
   LogVerificationStatus,
   NafdacMismatch,
@@ -121,13 +122,20 @@ export async function POST(request: NextRequest) {
   }
 
   function buildVerifiedResult(
-    productName: string,
-    companyName: string,
-    productCategory: string,
+    rawProductName: string,
+    rawCompanyName: string,
+    rawProductCategory: string,
     additionalInfo: Record<string, string> | undefined,
     source: NafdacVerificationResult["source"],
     previousCategory?: string | null
   ): NafdacVerificationResult {
+    // Decoded here (not just at scrape time) so cache entries written
+    // before this fix existed still display correctly - the decode is a
+    // no-op on text that's already clean.
+    const productName = decodeHtmlEntities(rawProductName)
+    const companyName = decodeHtmlEntities(rawCompanyName)
+    const productCategory = decodeHtmlEntities(rawProductCategory)
+
     const mismatches = productType
       ? detectMismatches({
           claimedProductType: productType,
