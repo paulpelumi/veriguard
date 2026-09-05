@@ -6,6 +6,12 @@ export function daysUntil(dateString: string): number {
   return Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
 }
 
+export function startOfTodayIso(): string {
+  const start = new Date()
+  start.setHours(0, 0, 0, 0)
+  return start.toISOString()
+}
+
 export function daysAgoIso(days: number): string {
   return new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
 }

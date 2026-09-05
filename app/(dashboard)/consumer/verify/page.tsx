@@ -1,6 +1,12 @@
 import { ProductVerificationPanel } from "@/components/verification/product-verification-panel"
 
-export default function ConsumerVerifyPage() {
+export default async function ConsumerVerifyPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ nafdacNumber?: string }>
+}) {
+  const { nafdacNumber } = await searchParams
+
   return (
     <div className="flex flex-col gap-6">
       <div className="text-center sm:text-left">
@@ -10,7 +16,7 @@ export default function ConsumerVerifyPage() {
         </p>
       </div>
       <div className="mx-auto w-full max-w-xl sm:mx-0">
-        <ProductVerificationPanel reportPath="/consumer/report" />
+        <ProductVerificationPanel reportPath="/consumer/report" initialNumber={nafdacNumber} />
       </div>
     </div>
   )

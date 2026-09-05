@@ -3,31 +3,12 @@
 import { useEffect, useMemo, useState } from "react"
 
 import { createClient } from "@/lib/supabase/client"
+import { isRecallMatch } from "@/lib/utils/recall-matching"
 import type { RecallAlert } from "@/types"
 
 interface InventoryRef {
   product_name: string
   nafdac_number: string | null
-}
-
-// Mirrors an ilike '%term%' style fuzzy match (bidirectional substring),
-// done in memory since both datasets - one business's inventory and the
-// (small) set of active recalls - are small enough that this avoids an
-// N-query round trip per recall.
-function isRecallMatch(recall: RecallAlert, item: InventoryRef): boolean {
-  if (
-    recall.nafdac_number &&
-    item.nafdac_number &&
-    recall.nafdac_number.toUpperCase() === item.nafdac_number.toUpperCase()
-  ) {
-    return true
-  }
-
-  const recallName = recall.product_name.toLowerCase().trim()
-  const itemName = item.product_name.toLowerCase().trim()
-  if (!recallName || !itemName) return false
-
-  return recallName.includes(itemName) || itemName.includes(recallName)
 }
 
 export function useRecalls(businessId: string | null) {

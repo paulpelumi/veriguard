@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { Loader2, Package, Plus } from "lucide-react"
 
 import { AddProductDrawer } from "@/components/inventory/add-product-drawer"
@@ -38,10 +39,14 @@ const defaultFilters: InventoryFilterState = {
 }
 
 export default function InventoryPage() {
+  const searchParams = useSearchParams()
   const [businessId, setBusinessId] = useState<string | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null)
-  const [filters, setFilters] = useState<InventoryFilterState>(defaultFilters)
+  const [filters, setFilters] = useState<InventoryFilterState>(() => ({
+    ...defaultFilters,
+    search: searchParams.get("search") ?? "",
+  }))
 
   useEffect(() => {
     const supabase = createClient()

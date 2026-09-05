@@ -27,11 +27,15 @@ const RECENT_LIMIT = 5
 
 interface ProductVerificationPanelProps {
   reportPath: string
+  initialNumber?: string
 }
 
-export function ProductVerificationPanel({ reportPath }: ProductVerificationPanelProps) {
+export function ProductVerificationPanel({
+  reportPath,
+  initialNumber,
+}: ProductVerificationPanelProps) {
   const router = useRouter()
-  const [value, setValue] = useState("")
+  const [value, setValue] = useState(initialNumber ?? "")
   const [productType, setProductType] = useState<string | null>(null)
   const [isVerifying, setIsVerifying] = useState(false)
   const [result, setResult] = useState<NafdacVerificationResult | null>(null)

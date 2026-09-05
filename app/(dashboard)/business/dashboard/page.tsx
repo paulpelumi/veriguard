@@ -7,10 +7,11 @@ import { StatCard } from "@/components/shared/stat-card"
 import { VerificationActivityChart } from "@/components/shared/verification-activity-chart"
 import { createClient } from "@/lib/supabase/server"
 import { buildVerificationActivitySeries } from "@/lib/utils/analytics"
-import { daysAgoIso, daysUntil } from "@/lib/utils/date"
+import { daysAgoIso, daysUntil, startOfTodayIso } from "@/lib/utils/date"
+import { isRecallMatch } from "@/lib/utils/recall-matching"
 
 const EXPIRY_WINDOW_DAYS = 30
-const ACTIVITY_WINDOW_DAYS = 14
+const ACTIVITY_WINDOW_DAYS = 7
 
 export default async function BusinessDashboardPage() {
   const supabase = await createClient()
@@ -22,17 +23,25 @@ export default async function BusinessDashboardPage() {
     return null
   }
 
-  const [{ data: inventory }, { data: verificationLogs }] = await Promise.all([
-    supabase
-      .from("inventory")
-      .select("id, product_name, product_type, nafdac_number, expiry_date, quantity, unit, verification_status")
-      .eq("business_id", user.id),
-    supabase
-      .from("verification_logs")
-      .select("verification_status, created_at")
-      .eq("user_id", user.id)
-      .gte("created_at", daysAgoIso(ACTIVITY_WINDOW_DAYS)),
-  ])
+  const [{ data: inventory }, { data: verificationLogs }, verifiedTodayResult, { data: activeRecalls }] =
+    await Promise.all([
+      supabase
+        .from("inventory")
+        .select("id, product_name, product_type, nafdac_number, expiry_date, quantity, unit, verification_status")
+        .eq("business_id", user.id),
+      supabase
+        .from("verification_logs")
+        .select("verification_status, created_at")
+        .eq("user_id", user.id)
+        .gte("created_at", daysAgoIso(ACTIVITY_WINDOW_DAYS)),
+      supabase
+        .from("verification_logs")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("verification_status", "verified")
+        .gte("created_at", startOfTodayIso()),
+      supabase.from("recall_alerts").select("id, product_name, nafdac_number").eq("is_active", true),
+    ])
 
   const items = inventory ?? []
 
@@ -41,20 +50,11 @@ export default async function BusinessDashboardPage() {
     return days >= 0 && days <= EXPIRY_WINDOW_DAYS
   })
 
-  const verifiedCount = items.filter((item) => item.verification_status === "verified").length
+  const verifiedToday = verifiedTodayResult.count ?? 0
 
-  const nafdacNumbers = [
-    ...new Set(items.map((item) => item.nafdac_number).filter((value): value is string => !!value)),
-  ]
-
-  const { data: activeRecalls } =
-    nafdacNumbers.length > 0
-      ? await supabase
-          .from("recall_alerts")
-          .select("id")
-          .eq("is_active", true)
-          .in("nafdac_number", nafdacNumbers)
-      : { data: [] }
+  const recalledItemsCount = (activeRecalls ?? []).filter((recall) =>
+    items.some((item) => isRecallMatch(recall, item))
+  ).length
 
   const categoryCounts = items.reduce<Record<string, number>>((acc, item) => {
     acc[item.product_type] = (acc[item.product_type] ?? 0) + 1
@@ -99,12 +99,12 @@ export default async function BusinessDashboardPage() {
           icon={CalendarClock}
           tone={expiringSoon.length > 0 ? "warning" : "default"}
         />
-        <StatCard label="Verified" value={verifiedCount} icon={ShieldCheck} tone="success" />
+        <StatCard label="Verified Today" value={verifiedToday} icon={ShieldCheck} tone="success" />
         <StatCard
-          label="Active Recalls"
-          value={activeRecalls?.length ?? 0}
+          label="Recalled Items"
+          value={recalledItemsCount}
           icon={AlertTriangle}
-          tone={(activeRecalls?.length ?? 0) > 0 ? "destructive" : "default"}
+          tone={recalledItemsCount > 0 ? "destructive" : "default"}
         />
       </div>
 

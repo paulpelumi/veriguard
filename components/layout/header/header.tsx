@@ -18,7 +18,7 @@ export function Header({ navItems, homeHref, fullName, email, role }: HeaderProp
   return (
     <header className="flex h-16 shrink-0 items-center gap-3 border-b border-border bg-background px-4 sm:px-6">
       <MobileNav items={navItems} homeHref={homeHref} />
-      <HeaderSearch />
+      <HeaderSearch role={role} />
       <div className="ml-auto flex items-center gap-1">
         <ThemeToggle />
         <NotificationBell />
