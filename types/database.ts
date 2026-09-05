@@ -33,10 +33,10 @@ export type NafdacCacheSource = "live" | "manual"
 
 export type ScrapeLogResult = "success" | "timeout" | "not_found" | "parse_error" | "network_error"
 
-export type SerialisedProductStatus = "pending" | "active" | "completed" | string
-export type ProductSerialStatus = "unscanned" | "first_scanned" | string
+export type SerialisedProductStatus = "pending" | "generated" | "distributed" | "recalled"
+export type ProductSerialStatus = "unscanned" | "first_scanned" | "rescanned" | "flagged"
 export type ScanEventSource = "web" | "whatsapp" | "api"
-export type ScanEventResult = "first_scan" | "duplicate" | string
+export type ScanEventResult = "authentic" | "duplicate_warning" | "flagged"
 
 export type NotificationType =
   | "expiry_warning"
