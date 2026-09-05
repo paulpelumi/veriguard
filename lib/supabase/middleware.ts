@@ -37,6 +37,14 @@ export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl
   const isPublicRoute = PUBLIC_ROUTES.includes(pathname)
   const isAuthRoute = AUTH_ROUTES.includes(pathname)
+  const isApiRoute = pathname.startsWith("/api/")
+
+  // API routes return JSON to fetch() callers, not pages - redirecting them
+  // to /login would hand back an HTML document instead. Let the request
+  // through and let each route handler enforce its own auth check.
+  if (isApiRoute) {
+    return supabaseResponse
+  }
 
   if (!user && !isPublicRoute) {
     const redirectUrl = request.nextUrl.clone()

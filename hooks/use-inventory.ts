@@ -5,7 +5,8 @@ import { toast } from "sonner"
 
 import { createClient } from "@/lib/supabase/client"
 import type { InventoryFormValues } from "@/lib/validations/inventory"
-import type { InventoryItem } from "@/types"
+import type { InventoryItem, NafdacVerificationResult } from "@/types"
+import type { VerificationStatus } from "@/types/database"
 
 type MutationResult = { success: boolean }
 
@@ -188,5 +189,73 @@ export function useInventory(businessId: string | null) {
     [supabase]
   )
 
-  return { items, isLoading, error, addItem, updateItem, deleteItem, refetch: fetchItems }
+  const verifyItem = useCallback(
+    async (item: InventoryItem) => {
+      if (!item.nafdac_number) {
+        toast.error("This product has no NAFDAC number to verify.")
+        return
+      }
+
+      const toastId = toast.loading(`Verifying ${item.nafdac_number}...`)
+
+      try {
+        const response = await fetch("/api/nafdac/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ nafdacNumber: item.nafdac_number }),
+        })
+        const result: NafdacVerificationResult = await response.json()
+
+        const newStatus: VerificationStatus =
+          result.status === "verified"
+            ? "verified"
+            : result.status === "not_found"
+              ? "failed"
+              : "pending"
+
+        let previousSnapshot: InventoryItem[] = []
+        setItems((current) => {
+          previousSnapshot = current
+          return current.map((row) =>
+            row.id === item.id
+              ? { ...row, verification_status: newStatus, is_verified: newStatus === "verified" }
+              : row
+          )
+        })
+
+        const { error: verifyUpdateError } = await supabase
+          .from("inventory")
+          .update({ verification_status: newStatus, is_verified: newStatus === "verified" })
+          .eq("id", item.id)
+
+        if (verifyUpdateError) {
+          setItems(previousSnapshot)
+        }
+
+        toast.dismiss(toastId)
+        if (result.status === "verified") {
+          toast.success(`Verified: ${result.product?.name ?? item.product_name}`)
+        } else if (result.status === "not_found") {
+          toast.error(result.message)
+        } else {
+          toast.warning(result.message)
+        }
+      } catch {
+        toast.dismiss(toastId)
+        toast.error("Couldn't reach the verification service.")
+      }
+    },
+    [supabase]
+  )
+
+  return {
+    items,
+    isLoading,
+    error,
+    addItem,
+    updateItem,
+    deleteItem,
+    verifyItem,
+    refetch: fetchItems,
+  }
 }

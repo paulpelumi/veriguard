@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { Loader2, Package, Plus } from "lucide-react"
-import { toast } from "sonner"
 
 import { AddProductDrawer } from "@/components/inventory/add-product-drawer"
 import {
@@ -51,7 +50,8 @@ export default function InventoryPage() {
     })
   }, [])
 
-  const { items, isLoading, error, addItem, updateItem, deleteItem } = useInventory(businessId)
+  const { items, isLoading, error, addItem, updateItem, deleteItem, verifyItem } =
+    useInventory(businessId)
 
   const filteredItems = useMemo(() => {
     const search = filters.search.trim().toLowerCase()
@@ -80,9 +80,7 @@ export default function InventoryPage() {
   }
 
   function handleVerifyClick(item: InventoryItem) {
-    toast.info(
-      `NAFDAC verification for ${item.nafdac_number} is coming with the Verification module.`
-    )
+    verifyItem(item)
   }
 
   async function handleSubmit(values: InventoryFormValues) {

@@ -8,14 +8,30 @@ export type VerificationLog = Database["public"]["Tables"]["verification_logs"][
 export type CounterfeitReport = Database["public"]["Tables"]["counterfeit_reports"]["Row"]
 export type RecallAlert = Database["public"]["Tables"]["recall_alerts"]["Row"]
 
+export type NafdacVerificationStatus =
+  | "verified"
+  | "not_found"
+  | "unavailable"
+  | "invalid_format"
+  | "error"
+
+export type NafdacVerificationSource = "nafdac_live" | "cache" | "mock"
+
+export interface NafdacVerificationProduct {
+  name: string
+  company: string
+  category: string
+  registration_number: string
+  additional_info?: Record<string, string>
+}
+
 export interface NafdacVerificationResult {
-  nafdacNumber: string
-  productName: string
-  companyName: string
-  productCategory: string
-  status: "verified" | "not_found"
-  registrationDate?: string
-  expiryDate?: string
+  status: NafdacVerificationStatus
+  nafdac_number: string
+  product?: NafdacVerificationProduct
+  message: string
+  timestamp: string
+  source: NafdacVerificationSource
 }
 
 export interface ApiErrorResponse {
