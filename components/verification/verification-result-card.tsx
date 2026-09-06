@@ -1,7 +1,17 @@
 "use client"
 
 import { useState } from "react"
-import { AlertTriangle, Ban, CheckCircle2, ChevronDown, Factory, RefreshCw, ShieldAlert } from "lucide-react"
+import {
+  AlertTriangle,
+  Ban,
+  CheckCircle2,
+  ChevronDown,
+  Factory,
+  RefreshCw,
+  Share2,
+  ShieldAlert,
+} from "lucide-react"
+import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -68,6 +78,32 @@ export function VerificationResultCard({
 }: VerificationResultCardProps) {
   const [showDetails, setShowDetails] = useState(false)
 
+  // Only offered for the two "product found" states - nafdac_cache only
+  // ever stores verified results (Module 1), so a shared /verify/[number]
+  // link for a not_found number would misleadingly say "hasn't been
+  // checked yet" instead of reflecting the real not-found result.
+  async function handleShare() {
+    const url = `${window.location.origin}/verify/${encodeURIComponent(result.nafdac_number)}`
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "VeriGuard product verification", url })
+        return
+      } catch {
+        // User cancelled the native share sheet, or the browser rejected it
+        // - either way, falling through to a clipboard copy still gets
+        // them a usable link instead of silently doing nothing.
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(url)
+      toast.success("Link copied to clipboard")
+    } catch {
+      toast.error("Couldn't copy the link. Try again.")
+    }
+  }
+
   if (result.status === "verified_with_warnings" && result.product) {
     const { product } = result
     const mismatches = result.mismatches ?? []
@@ -124,6 +160,10 @@ export function VerificationResultCard({
               render={<a href={GREENBOOK_URL} target="_blank" rel="noreferrer" />}
             >
               View NAFDAC Record
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleShare}>
+              <Share2 className="size-4" />
+              Share Result
             </Button>
           </div>
         </CardContent>
@@ -194,6 +234,10 @@ export function VerificationResultCard({
           <div className="flex flex-wrap gap-2 pt-1">
             <Button variant="outline" size="sm" onClick={onReportIssue}>
               Report Issue
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleShare}>
+              <Share2 className="size-4" />
+              Share Result
             </Button>
           </div>
         </CardContent>

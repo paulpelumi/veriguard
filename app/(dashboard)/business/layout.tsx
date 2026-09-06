@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation"
 
 import { DashboardShell } from "@/components/layout/dashboard-shell"
+import { ProfileCompletionModal } from "@/components/shared/profile-completion-modal"
 import { createClient } from "@/lib/supabase/server"
 import { businessNavItems } from "@/lib/utils/navigation"
+import { shouldShowProfileCompletionModal } from "@/lib/utils/profile-completion"
 
 export default async function BusinessLayout({
   children,
@@ -20,7 +22,7 @@ export default async function BusinessLayout({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, email, role")
+    .select("full_name, email, role, phone, state, profile_completion_skipped_at")
     .eq("id", user.id)
     .single()
 
@@ -37,14 +39,21 @@ export default async function BusinessLayout({
   }
 
   return (
-    <DashboardShell
-      navItems={businessNavItems}
-      homeHref="/business/dashboard"
-      fullName={profile.full_name}
-      email={profile.email}
-      role={profile.role}
-    >
-      {children}
-    </DashboardShell>
+    <>
+      <ProfileCompletionModal
+        userId={user.id}
+        role={profile.role}
+        defaultOpen={shouldShowProfileCompletionModal(profile)}
+      />
+      <DashboardShell
+        navItems={businessNavItems}
+        homeHref="/business/dashboard"
+        fullName={profile.full_name}
+        email={profile.email}
+        role={profile.role}
+      >
+        {children}
+      </DashboardShell>
+    </>
   )
 }

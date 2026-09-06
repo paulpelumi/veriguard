@@ -66,6 +66,8 @@ export interface Database {
           phone: string | null
           state: string | null
           lga: string | null
+          business_address: string | null
+          profile_completion_skipped_at: string | null
           subscription_tier: SubscriptionTier
           is_verified: boolean
           is_suspended: boolean
@@ -82,6 +84,8 @@ export interface Database {
           phone?: string | null
           state?: string | null
           lga?: string | null
+          business_address?: string | null
+          profile_completion_skipped_at?: string | null
           subscription_tier?: SubscriptionTier
           is_verified?: boolean
           is_suspended?: boolean
@@ -98,6 +102,8 @@ export interface Database {
           phone?: string | null
           state?: string | null
           lga?: string | null
+          business_address?: string | null
+          profile_completion_skipped_at?: string | null
           subscription_tier?: SubscriptionTier
           is_verified?: boolean
           is_suspended?: boolean
