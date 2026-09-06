@@ -61,11 +61,22 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (user && (isAuthRoute || !isPublicRoute)) {
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("role, is_suspended")
       .eq("id", user.id)
       .single()
+
+    // A failed lookup (RLS misconfigured, a pending migration, a transient
+    // error) must never be treated as "role matched nothing" - the
+    // business/consumer mutual-exclusion redirects below would otherwise
+    // bounce every request back and forth forever, since neither branch's
+    // condition (role !== "business" / role !== "consumer") can ever be
+    // false for an undefined role. Letting the request through unmodified
+    // is safe: the destination page's own auth check still applies.
+    if (profileError || !profile) {
+      return supabaseResponse
+    }
 
     // Module 7: a suspended account is signed out on its very next request,
     // regardless of which page it was headed to - the cookie session would
