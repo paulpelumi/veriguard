@@ -24,6 +24,15 @@ export default async function ConsumerLayout({
     .eq("id", user.id)
     .single()
 
+  // This predates the admin/manufacturer roles (Module 7) and only ever
+  // considered two roles - an admin visiting here isn't "wrong", they
+  // just belong at /admin instead of being bounced to /business/dashboard,
+  // which would in turn bounce them right back here forever (neither
+  // layout's check can ever pass for a role that is genuinely neither).
+  if (profile?.role === "admin") {
+    redirect("/admin")
+  }
+
   if (!profile || profile.role !== "consumer") {
     redirect("/business/dashboard")
   }
