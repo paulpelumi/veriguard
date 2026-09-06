@@ -183,7 +183,9 @@ export interface Database {
       verification_logs: {
         Row: {
           id: string
-          user_id: string
+          // Module 8: null when a WhatsApp sender's phone number doesn't
+          // match any registered VeriGuard account.
+          user_id: string | null
           nafdac_number: string
           product_name: string | null
           company_name: string | null
@@ -197,7 +199,7 @@ export interface Database {
         }
         Insert: {
           id?: string
-          user_id: string
+          user_id?: string | null
           nafdac_number: string
           product_name?: string | null
           company_name?: string | null
@@ -211,7 +213,7 @@ export interface Database {
         }
         Update: {
           id?: string
-          user_id?: string
+          user_id?: string | null
           nafdac_number?: string
           product_name?: string | null
           company_name?: string | null
@@ -805,6 +807,24 @@ export interface Database {
         }
         Relationships: []
       }
+      whatsapp_rate_limits: {
+        Row: {
+          phone_number: string
+          request_count: number
+          window_start: string
+        }
+        Insert: {
+          phone_number: string
+          request_count?: number
+          window_start?: string
+        }
+        Update: {
+          phone_number?: string
+          request_count?: number
+          window_start?: string
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: {
@@ -878,6 +898,10 @@ export interface Database {
       anomaly_states_touched: {
         Args: { p_nafdac_number: string; p_since: string }
         Returns: string[]
+      }
+      whatsapp_check_rate_limit: {
+        Args: { p_phone_number: string; p_limit?: number; p_window_minutes?: number }
+        Returns: boolean
       }
     }
     Enums: Record<string, never>
