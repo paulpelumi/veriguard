@@ -1,5 +1,7 @@
 import { Header } from "@/components/layout/header/header"
 import { Sidebar } from "@/components/layout/sidebar/sidebar"
+import { InstallPrompt } from "@/components/shared/install-prompt"
+import { OfflineIndicator } from "@/components/shared/offline-indicator"
 import type { NavItem } from "@/lib/utils/navigation"
 import type { UserRole } from "@/types/database"
 
@@ -31,6 +33,8 @@ export function DashboardShell({
           email={email}
           role={role}
         />
+        <OfflineIndicator />
+        <InstallPrompt />
         <main className="flex-1 overflow-y-auto p-4 sm:p-6">{children}</main>
       </div>
     </div>

@@ -4,7 +4,14 @@ import { NextResponse, type NextRequest } from "next/server"
 import type { Database } from "@/types/database"
 
 const AUTH_ROUTES = ["/login", "/register"]
-const PUBLIC_ROUTES = ["/", ...AUTH_ROUTES]
+// Exact-match public pages, plus a prefix for the dynamic public share
+// route (/verify/[nafdacNumber]) - these were missed when this list was
+// first written (Phase 1) and stayed missed through every later addition
+// (Module 8's /privacy, this module's /offline, and Global Improvement 2's
+// /verify/[nafdacNumber]), so each silently required a login the entire
+// time despite being built as public pages.
+const PUBLIC_ROUTES = ["/", "/privacy", "/offline", ...AUTH_ROUTES]
+const PUBLIC_PREFIXES = ["/verify/"]
 
 function homeForRole(role: string | undefined): string {
   if (role === "admin") return "/admin"
@@ -41,7 +48,8 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const { pathname } = request.nextUrl
-  const isPublicRoute = PUBLIC_ROUTES.includes(pathname)
+  const isPublicRoute =
+    PUBLIC_ROUTES.includes(pathname) || PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix))
   const isAuthRoute = AUTH_ROUTES.includes(pathname)
   const isApiRoute = pathname.startsWith("/api/")
 

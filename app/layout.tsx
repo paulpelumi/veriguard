@@ -1,8 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 import { QueryProvider } from "@/components/shared/query-provider";
+import { ServiceWorkerRegister } from "@/components/shared/service-worker-register";
 import { ThemeProvider } from "@/components/shared/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -20,6 +21,15 @@ export const metadata: Metadata = {
   title: "VeriGuard | Verify. Monitor. Protect.",
   description:
     "Nigerian food safety, inventory management, and NAFDAC regulatory compliance platform.",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "VeriGuard",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#1A5C38",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -39,6 +49,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <QueryProvider>
             {children}
             <Toaster />
+            <ServiceWorkerRegister />
           </QueryProvider>
         </ThemeProvider>
       </body>
