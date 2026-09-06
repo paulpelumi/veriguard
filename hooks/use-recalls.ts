@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo } from "react"
+import { useQuery } from "@tanstack/react-query"
 
 import { createClient } from "@/lib/supabase/client"
 import { isRecallMatch } from "@/lib/utils/recall-matching"
@@ -13,21 +14,15 @@ interface InventoryRef {
 
 export function useRecalls(businessId: string | null) {
   const supabase = useMemo(() => createClient(), [])
-  const [allRecalls, setAllRecalls] = useState<RecallAlert[]>([])
-  const [inventoryRefs, setInventoryRefs] = useState<InventoryRef[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!businessId) return
-    const currentBusinessId = businessId
-
-    let cancelled = false
-
-    async function load() {
-      setIsLoading(true)
-      setError(null)
-
+  const {
+    data,
+    isLoading,
+    error: queryError,
+  } = useQuery({
+    queryKey: ["recalls", businessId],
+    enabled: !!businessId,
+    queryFn: async () => {
       const [recallsResult, inventoryResult] = await Promise.all([
         supabase
           .from("recall_alerts")
@@ -37,26 +32,20 @@ export function useRecalls(businessId: string | null) {
         supabase
           .from("inventory")
           .select("product_name, nafdac_number")
-          .eq("business_id", currentBusinessId),
+          .eq("business_id", businessId!),
       ])
 
-      if (cancelled) return
+      if (recallsResult.error) throw new Error(recallsResult.error.message)
 
-      if (recallsResult.error) {
-        setError(recallsResult.error.message)
-      } else {
-        setAllRecalls(recallsResult.data ?? [])
-        setInventoryRefs(inventoryResult.data ?? [])
+      return {
+        allRecalls: recallsResult.data ?? [],
+        inventoryRefs: inventoryResult.data ?? [],
       }
-      setIsLoading(false)
-    }
+    },
+  })
 
-    load()
-
-    return () => {
-      cancelled = true
-    }
-  }, [businessId, supabase])
+  const allRecalls = useMemo<RecallAlert[]>(() => data?.allRecalls ?? [], [data])
+  const inventoryRefs = useMemo<InventoryRef[]>(() => data?.inventoryRefs ?? [], [data])
 
   const matchesByRecallId = useMemo(() => {
     const map = new Map<string, string[]>()
@@ -69,10 +58,16 @@ export function useRecalls(businessId: string | null) {
     return map
   }, [allRecalls, inventoryRefs])
 
-  const affectedRecalls = useMemo(
+  const affectedRecalls = useMemo<RecallAlert[]>(
     () => allRecalls.filter((recall) => matchesByRecallId.has(recall.id)),
     [allRecalls, matchesByRecallId]
   )
 
-  return { allRecalls, affectedRecalls, matchesByRecallId, isLoading, error }
+  return {
+    allRecalls,
+    affectedRecalls,
+    matchesByRecallId,
+    isLoading,
+    error: queryError instanceof Error ? queryError.message : null,
+  }
 }

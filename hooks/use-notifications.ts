@@ -1,37 +1,35 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo } from "react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { createClient } from "@/lib/supabase/client"
 import type { Notification } from "@/types"
 
 const FETCH_LIMIT = 20
 
+function notificationsKey(userId: string | null) {
+  return ["notifications", userId] as const
+}
+
 export function useNotifications(userId: string | null) {
   const supabase = useMemo(() => createClient(), [])
-  const [notifications, setNotifications] = useState<Notification[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const queryClient = useQueryClient()
+  const queryKey = notificationsKey(userId)
 
-  const fetchNotifications = useCallback(async () => {
-    if (!userId) return
-
-    setIsLoading(true)
-    const { data } = await supabase
-      .from("notifications")
-      .select("*")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(FETCH_LIMIT)
-
-    setNotifications(data ?? [])
-    setIsLoading(false)
-  }, [userId, supabase])
-
-  useEffect(() => {
-    // Fetch-on-mount/dependency-change is what this effect synchronizes.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchNotifications()
-  }, [fetchNotifications])
+  const { data: notifications = [], isLoading } = useQuery({
+    queryKey,
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("notifications")
+        .select("*")
+        .eq("user_id", userId!)
+        .order("created_at", { ascending: false })
+        .limit(FETCH_LIMIT)
+      return data ?? []
+    },
+  })
 
   useEffect(() => {
     if (!userId) return
@@ -47,7 +45,7 @@ export function useNotifications(userId: string | null) {
           filter: `user_id=eq.${userId}`,
         },
         (payload) => {
-          setNotifications((current) => {
+          queryClient.setQueryData<Notification[]>(queryKey, (current = []) => {
             if (payload.eventType === "INSERT") {
               const newRow = payload.new as Notification
               if (current.some((n) => n.id === newRow.id)) return current
@@ -70,29 +68,46 @@ export function useNotifications(userId: string | null) {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [userId, supabase])
+    // queryKey is derived from userId, already a dependency.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, supabase, queryClient])
 
   const unreadCount = notifications.filter((n) => !n.is_read).length
 
-  const markAsRead = useCallback(
-    async (id: string) => {
-      setNotifications((current) =>
-        current.map((n) => (n.id === id ? { ...n, is_read: true } : n))
-      )
+  const markAsReadMutation = useMutation({
+    mutationFn: async (id: string) => {
       await supabase.from("notifications").update({ is_read: true }).eq("id", id)
     },
-    [supabase]
-  )
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey })
+      queryClient.setQueryData<Notification[]>(queryKey, (current = []) =>
+        current.map((n) => (n.id === id ? { ...n, is_read: true } : n))
+      )
+    },
+  })
 
-  const markAllAsRead = useCallback(async () => {
-    if (!userId) return
-    setNotifications((current) => current.map((n) => ({ ...n, is_read: true })))
-    await supabase
-      .from("notifications")
-      .update({ is_read: true })
-      .eq("user_id", userId)
-      .eq("is_read", false)
-  }, [userId, supabase])
+  const markAllAsReadMutation = useMutation({
+    mutationFn: async () => {
+      if (!userId) return
+      await supabase
+        .from("notifications")
+        .update({ is_read: true })
+        .eq("user_id", userId)
+        .eq("is_read", false)
+    },
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey })
+      queryClient.setQueryData<Notification[]>(queryKey, (current = []) =>
+        current.map((n) => ({ ...n, is_read: true }))
+      )
+    },
+  })
 
-  return { notifications, unreadCount, isLoading, markAsRead, markAllAsRead }
+  return {
+    notifications,
+    unreadCount,
+    isLoading,
+    markAsRead: markAsReadMutation.mutate,
+    markAllAsRead: markAllAsReadMutation.mutate,
+  }
 }

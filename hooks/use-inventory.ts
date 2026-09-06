@@ -1,6 +1,7 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo } from "react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
 import { createClient } from "@/lib/supabase/client"
@@ -9,6 +10,10 @@ import type { InventoryItem, NafdacVerificationResult } from "@/types"
 import type { VerificationStatus } from "@/types/database"
 
 type MutationResult = { success: boolean }
+
+function inventoryKey(businessId: string | null) {
+  return ["inventory", businessId] as const
+}
 
 function toInventoryRow(values: InventoryFormValues) {
   return {
@@ -26,38 +31,35 @@ function toInventoryRow(values: InventoryFormValues) {
   }
 }
 
+// React Query owns the cache/loading state (Global Improvement 3); the
+// Supabase realtime subscription still exists (React Query has no realtime
+// primitive of its own) but now patches the query cache via
+// queryClient.setQueryData instead of local useState, so it and the
+// mutations below share one source of truth.
 export function useInventory(businessId: string | null) {
   const supabase = useMemo(() => createClient(), [])
-  const [items, setItems] = useState<InventoryItem[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const queryClient = useQueryClient()
+  const queryKey = inventoryKey(businessId)
 
-  const fetchItems = useCallback(async () => {
-    if (!businessId) return
+  const {
+    data: items = [],
+    isLoading,
+    error: queryError,
+    refetch,
+  } = useQuery({
+    queryKey,
+    enabled: !!businessId,
+    queryFn: async () => {
+      const { data, error: fetchError } = await supabase
+        .from("inventory")
+        .select("*")
+        .eq("business_id", businessId!)
+        .order("expiry_date", { ascending: true })
 
-    setIsLoading(true)
-    setError(null)
-
-    const { data, error: fetchError } = await supabase
-      .from("inventory")
-      .select("*")
-      .eq("business_id", businessId)
-      .order("expiry_date", { ascending: true })
-
-    if (fetchError) {
-      setError(fetchError.message)
-    } else {
-      setItems(data ?? [])
-    }
-    setIsLoading(false)
-  }, [businessId, supabase])
-
-  useEffect(() => {
-    // Fetch-on-mount/dependency-change is exactly what this effect
-    // synchronizes; the resulting setState inside fetchItems is intentional.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchItems()
-  }, [fetchItems])
+      if (fetchError) throw new Error(fetchError.message)
+      return data ?? []
+    },
+  })
 
   useEffect(() => {
     if (!businessId) return
@@ -73,7 +75,7 @@ export function useInventory(businessId: string | null) {
           filter: `business_id=eq.${businessId}`,
         },
         (payload) => {
-          setItems((current) => {
+          queryClient.setQueryData<InventoryItem[]>(queryKey, (current = []) => {
             if (payload.eventType === "INSERT") {
               const newItem = payload.new as InventoryItem
               if (current.some((item) => item.id === newItem.id)) return current
@@ -96,179 +98,221 @@ export function useInventory(businessId: string | null) {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [businessId, supabase])
+    // queryKey is derived from businessId, already a dependency.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [businessId, supabase, queryClient])
 
-  const addItem = useCallback(
-    async (values: InventoryFormValues): Promise<MutationResult> => {
-      if (!businessId) {
-        toast.error("Could not identify your account. Try refreshing the page.")
-        return { success: false }
-      }
-
-      const optimisticId = `optimistic-${crypto.randomUUID()}`
-      const now = new Date().toISOString()
-      const optimisticItem: InventoryItem = {
-        id: optimisticId,
-        business_id: businessId,
-        is_verified: false,
-        verification_status: "unverified",
-        barcode: null,
-        purchase_price: null,
-        created_at: now,
-        updated_at: now,
-        ...toInventoryRow(values),
-      }
-
-      setItems((current) => [...current, optimisticItem])
-
+  const addMutation = useMutation({
+    mutationFn: async (values: InventoryFormValues) => {
+      if (!businessId) throw new Error("Could not identify your account. Try refreshing the page.")
       const { data, error: insertError } = await supabase
         .from("inventory")
         .insert({ business_id: businessId, ...toInventoryRow(values) })
         .select()
         .single()
-
-      if (insertError || !data) {
-        setItems((current) => current.filter((item) => item.id !== optimisticId))
-        toast.error(insertError?.message ?? "Could not add product")
-        return { success: false }
-      }
-
-      setItems((current) => current.map((item) => (item.id === optimisticId ? data : item)))
-      toast.success("Product added")
-      return { success: true }
+      if (insertError || !data) throw new Error(insertError?.message ?? "Could not add product")
+      return data
     },
-    [businessId, supabase]
-  )
+    onMutate: async (values) => {
+      await queryClient.cancelQueries({ queryKey })
+      const previous = queryClient.getQueryData<InventoryItem[]>(queryKey)
+      if (businessId) {
+        const optimisticId = `optimistic-${crypto.randomUUID()}`
+        const now = new Date().toISOString()
+        const optimisticItem: InventoryItem = {
+          id: optimisticId,
+          business_id: businessId,
+          is_verified: false,
+          verification_status: "unverified",
+          barcode: null,
+          purchase_price: null,
+          created_at: now,
+          updated_at: now,
+          ...toInventoryRow(values),
+        }
+        queryClient.setQueryData<InventoryItem[]>(queryKey, (current = []) => [
+          ...current,
+          optimisticItem,
+        ])
+        return { previous, optimisticId }
+      }
+      return { previous, optimisticId: null }
+    },
+    onError: (mutationError, _values, context) => {
+      if (context) queryClient.setQueryData(queryKey, context.previous)
+      toast.error(mutationError.message)
+    },
+    onSuccess: (data, _values, context) => {
+      queryClient.setQueryData<InventoryItem[]>(queryKey, (current = []) =>
+        current.map((item) => (item.id === context?.optimisticId ? data : item))
+      )
+      toast.success("Product added")
+    },
+  })
 
-  const updateItem = useCallback(
-    async (id: string, values: InventoryFormValues): Promise<MutationResult> => {
-      let previousSnapshot: InventoryItem[] = []
-      setItems((current) => {
-        previousSnapshot = current
-        return current.map((item) =>
-          item.id === id ? { ...item, ...toInventoryRow(values) } : item
-        )
-      })
-
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, values }: { id: string; values: InventoryFormValues }) => {
       const { error: updateError } = await supabase
         .from("inventory")
         .update(toInventoryRow(values))
         .eq("id", id)
-
-      if (updateError) {
-        setItems(previousSnapshot)
-        toast.error(updateError.message)
-        return { success: false }
-      }
-
-      toast.success("Product updated")
-      return { success: true }
+      if (updateError) throw new Error(updateError.message)
     },
-    [supabase]
-  )
+    onMutate: async ({ id, values }) => {
+      await queryClient.cancelQueries({ queryKey })
+      const previous = queryClient.getQueryData<InventoryItem[]>(queryKey)
+      queryClient.setQueryData<InventoryItem[]>(queryKey, (current = []) =>
+        current.map((item) => (item.id === id ? { ...item, ...toInventoryRow(values) } : item))
+      )
+      return { previous }
+    },
+    onError: (mutationError, _vars, context) => {
+      if (context) queryClient.setQueryData(queryKey, context.previous)
+      toast.error(mutationError.message)
+    },
+    onSuccess: () => toast.success("Product updated"),
+  })
 
-  const deleteItem = useCallback(
-    async (id: string): Promise<MutationResult> => {
-      let previousSnapshot: InventoryItem[] = []
-      setItems((current) => {
-        previousSnapshot = current
-        return current.filter((item) => item.id !== id)
-      })
-
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
       const { error: deleteError } = await supabase.from("inventory").delete().eq("id", id)
-
-      if (deleteError) {
-        setItems(previousSnapshot)
-        toast.error(deleteError.message)
-        return { success: false }
-      }
-
-      toast.success("Product deleted")
-      return { success: true }
+      if (deleteError) throw new Error(deleteError.message)
     },
-    [supabase]
-  )
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey })
+      const previous = queryClient.getQueryData<InventoryItem[]>(queryKey)
+      queryClient.setQueryData<InventoryItem[]>(queryKey, (current = []) =>
+        current.filter((item) => item.id !== id)
+      )
+      return { previous }
+    },
+    onError: (mutationError, _id, context) => {
+      if (context) queryClient.setQueryData(queryKey, context.previous)
+      toast.error(mutationError.message)
+    },
+    onSuccess: () => toast.success("Product deleted"),
+  })
 
-  const verifyItem = useCallback(
-    async (item: InventoryItem) => {
+  const verifyMutation = useMutation({
+    mutationFn: async (item: InventoryItem) => {
       if (!item.nafdac_number) {
-        toast.error("This product has no NAFDAC number to verify.")
-        return
+        throw new Error("This product has no NAFDAC number to verify.")
       }
+      const response = await fetch("/api/nafdac/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nafdacNumber: item.nafdac_number, productType: item.product_type }),
+      })
+      const result: NafdacVerificationResult = await response.json()
 
-      const toastId = toast.loading(`Verifying ${item.nafdac_number}...`)
+      // A "not found" caused by a registry coverage gap (e.g. food/drink
+      // products aren't in NAFDAC's public drug registry) isn't evidence
+      // the product is unverified - leave it pending rather than failed.
+      // "verified_with_warnings" is still a registered number (just with
+      // detected inconsistencies), so it counts as verified too - the
+      // warning is surfaced via the toast below, not the status field.
+      const newStatus: VerificationStatus =
+        result.status === "verified" || result.status === "verified_with_warnings"
+          ? "verified"
+          : result.status === "not_found" && !result.coverage_gap
+            ? "failed"
+            : "pending"
 
-      try {
-        const response = await fetch("/api/nafdac/verify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            nafdacNumber: item.nafdac_number,
-            productType: item.product_type,
-          }),
-        })
-        const result: NafdacVerificationResult = await response.json()
+      const { error: verifyUpdateError } = await supabase
+        .from("inventory")
+        .update({ verification_status: newStatus, is_verified: newStatus === "verified" })
+        .eq("id", item.id)
 
-        // A "not found" caused by a registry coverage gap (e.g. food/drink
-        // products aren't in NAFDAC's public drug registry) isn't evidence
-        // the product is unverified - leave it pending rather than failed.
-        // "verified_with_warnings" is still a registered number (just with
-        // detected inconsistencies), so it counts as verified too - the
-        // warning is surfaced via the toast below, not the status field.
-        const newStatus: VerificationStatus =
-          result.status === "verified" || result.status === "verified_with_warnings"
-            ? "verified"
-            : result.status === "not_found" && !result.coverage_gap
-              ? "failed"
-              : "pending"
-
-        let previousSnapshot: InventoryItem[] = []
-        setItems((current) => {
-          previousSnapshot = current
-          return current.map((row) =>
+      return { result, newStatus, verifyUpdateError }
+    },
+    onMutate: async (item) => {
+      await queryClient.cancelQueries({ queryKey })
+      const previous = queryClient.getQueryData<InventoryItem[]>(queryKey)
+      return { previous, itemId: item.id }
+    },
+    onSuccess: ({ result, newStatus, verifyUpdateError }, item, context) => {
+      if (verifyUpdateError) {
+        if (context) queryClient.setQueryData(queryKey, context.previous)
+      } else {
+        queryClient.setQueryData<InventoryItem[]>(queryKey, (current = []) =>
+          current.map((row) =>
             row.id === item.id
               ? { ...row, verification_status: newStatus, is_verified: newStatus === "verified" }
               : row
           )
-        })
+        )
+      }
 
-        const { error: verifyUpdateError } = await supabase
-          .from("inventory")
-          .update({ verification_status: newStatus, is_verified: newStatus === "verified" })
-          .eq("id", item.id)
-
-        if (verifyUpdateError) {
-          setItems(previousSnapshot)
-        }
-
-        toast.dismiss(toastId)
-        if (result.status === "verified") {
-          toast.success(`Verified: ${result.product?.name ?? item.product_name}`)
-        } else if (result.status === "verified_with_warnings") {
-          toast.warning(
-            `Registered but suspicious: ${result.product?.name ?? item.product_name}. Check the Verification page for details.`
-          )
-        } else if (result.status === "not_found" && !result.coverage_gap) {
-          toast.error(result.message)
-        } else {
-          toast.warning(result.message)
-        }
-      } catch {
-        toast.dismiss(toastId)
-        toast.error("Couldn't reach the verification service.")
+      if (result.status === "verified") {
+        toast.success(`Verified: ${result.product?.name ?? item.product_name}`)
+      } else if (result.status === "verified_with_warnings") {
+        toast.warning(
+          `Registered but suspicious: ${result.product?.name ?? item.product_name}. Check the Verification page for details.`
+        )
+      } else if (result.status === "not_found" && !result.coverage_gap) {
+        toast.error(result.message)
+      } else {
+        toast.warning(result.message)
       }
     },
-    [supabase]
+    onError: () => toast.error("Couldn't reach the verification service."),
+  })
+
+  const addItem = useCallback(
+    async (values: InventoryFormValues): Promise<MutationResult> => {
+      try {
+        await addMutation.mutateAsync(values)
+        return { success: true }
+      } catch {
+        return { success: false }
+      }
+    },
+    [addMutation]
+  )
+
+  const updateItem = useCallback(
+    async (id: string, values: InventoryFormValues): Promise<MutationResult> => {
+      try {
+        await updateMutation.mutateAsync({ id, values })
+        return { success: true }
+      } catch {
+        return { success: false }
+      }
+    },
+    [updateMutation]
+  )
+
+  const deleteItem = useCallback(
+    async (id: string): Promise<MutationResult> => {
+      try {
+        await deleteMutation.mutateAsync(id)
+        return { success: true }
+      } catch {
+        return { success: false }
+      }
+    },
+    [deleteMutation]
+  )
+
+  const verifyItem = useCallback(
+    async (item: InventoryItem) => {
+      try {
+        await verifyMutation.mutateAsync(item)
+      } catch {
+        // Already surfaced via the mutation's onError toast.
+      }
+    },
+    [verifyMutation]
   )
 
   return {
     items,
     isLoading,
-    error,
+    error: queryError instanceof Error ? queryError.message : null,
     addItem,
     updateItem,
     deleteItem,
     verifyItem,
-    refetch: fetchItems,
+    refetch,
   }
 }
