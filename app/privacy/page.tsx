@@ -107,8 +107,8 @@ export default function PrivacyPolicyPage() {
             You can review and update your profile information from your account settings at any
             time. To request deletion of your account and associated data, or to ask any question
             about this policy, contact us at{" "}
-            <a href="mailto:privacy@veriguard.ng" className="text-primary underline">
-              privacy@veriguard.ng
+            <a href="mailto:paulpelumi@gmail.com" className="text-primary underline">
+              paulpelumi@gmail.com
             </a>
             .
           </p>
