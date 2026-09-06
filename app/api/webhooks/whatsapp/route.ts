@@ -27,16 +27,36 @@ export async function GET(request: NextRequest) {
 // failure verifying one number shouldn't turn into Meta re-delivering (and
 // this handler re-processing) the same webhook payload repeatedly.
 export async function POST(request: NextRequest) {
-  const body = (await request.json().catch(() => null)) as WhatsAppWebhookPayload | null
+  const rawBody = await request.text()
+  const body = (() => {
+    try {
+      return JSON.parse(rawBody) as WhatsAppWebhookPayload
+    } catch {
+      return null
+    }
+  })()
+
   if (!body) {
+    console.error("[whatsapp webhook] received non-JSON body", rawBody.slice(0, 500))
     return NextResponse.json({ status: "ignored" }, { status: 200 })
   }
 
-  const supabase = createServiceRoleClient()
+  let supabase
+  try {
+    supabase = createServiceRoleClient()
+  } catch (error) {
+    // Must still return 200 - an uncaught throw here would surface as a
+    // 500 to Meta, which retries the same delivery repeatedly instead of
+    // giving up, turning one misconfigured env var into a retry storm.
+    console.error("[whatsapp webhook] failed to create service-role client", error)
+    return NextResponse.json({ status: "config_error" }, { status: 200 })
+  }
 
+  let messageCount = 0
   for (const entry of body.entry ?? []) {
     for (const change of entry.changes ?? []) {
       for (const message of change.value.messages ?? []) {
+        messageCount++
         try {
           await routeIncomingMessage(supabase, message)
         } catch (error) {
@@ -46,5 +66,14 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ status: "ok" }, { status: 200 })
+  // Zero messages found in an otherwise-valid payload usually means either
+  // a status/read-receipt update (expected, harmless) or that Meta's real
+  // payload shape doesn't match whatsapp-types.ts's assumptions (not
+  // expected - logging the raw body here is the fastest way to tell which,
+  // without waiting on Meta's retry behavior or guessing blind).
+  if (messageCount === 0) {
+    console.log("[whatsapp webhook] no messages found in payload", rawBody.slice(0, 1000))
+  }
+
+  return NextResponse.json({ status: "ok", messages_processed: messageCount }, { status: 200 })
 }
