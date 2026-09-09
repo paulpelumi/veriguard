@@ -19,6 +19,8 @@ export type ProductSerial = Database["public"]["Tables"]["product_serials"]["Row
 export type SerialScanEvent = Database["public"]["Tables"]["serial_scan_events"]["Row"]
 export type VerificationAnomaly = Database["public"]["Tables"]["verification_anomalies"]["Row"]
 export type GeographicStats = Database["public"]["Tables"]["geographic_stats"]["Row"]
+export type ManufacturerMachine = Database["public"]["Tables"]["manufacturer_machines"]["Row"]
+export type ManufacturerKey = Database["public"]["Tables"]["manufacturer_keys"]["Row"]
 
 export type NafdacVerificationStatus =
   | "verified"

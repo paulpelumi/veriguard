@@ -44,6 +44,30 @@ export type NotificationType =
   | "verification_complete"
   | "counterfeit_confirmed"
   | "verification_anomaly"
+  | "duplicate_detected"
+  | "batch_scan_milestone"
+  | "verification_approved"
+  | "verification_rejected"
+  | "subscription_reminder"
+
+export type SerialisationLevel = "unit" | "carton" | "pallet"
+export type ManufacturerVerificationStatus =
+  | "pending"
+  | "auto_checking"
+  | "pending_manual"
+  | "approved"
+  | "rejected"
+export type ManufacturerSubscriptionTier = "pilot" | "starter" | "professional" | "enterprise"
+export type MachineCategory =
+  | "industrial_coder"
+  | "label_printer"
+  | "laser_coder"
+  | "thermal_inkjet"
+  | "continuous_inkjet"
+  | "thermal_transfer"
+  | "direct_thermal"
+  | "uv_inkjet"
+  | "other"
 
 export type AnomalyType =
   | "high_frequency"
@@ -415,7 +439,28 @@ export interface Database {
           registration_document_url: string | null
           is_verified: boolean
           verified_at: string | null
+          cac_number: string | null
+          product_categories: string[]
+          production_volume_monthly: number | null
+          serialisation_level: SerialisationLevel | "mixed"
+          state: string | null
+          address: string | null
+          phone: string | null
+          website: string | null
+          nafdac_certificate_url: string | null
+          cac_certificate_url: string | null
+          verification_status: ManufacturerVerificationStatus
+          auto_check_result: Record<string, unknown> | null
+          auto_checked_at: string | null
+          manual_reviewed_by: string | null
+          manual_reviewed_at: string | null
+          rejection_reason: string | null
+          subscription_tier: ManufacturerSubscriptionTier
+          subscription_started_at: string | null
+          monthly_unit_limit: number
+          units_generated_this_month: number
           created_at: string
+          updated_at: string
         }
         Insert: {
           id: string
@@ -424,7 +469,28 @@ export interface Database {
           registration_document_url?: string | null
           is_verified?: boolean
           verified_at?: string | null
+          cac_number?: string | null
+          product_categories?: string[]
+          production_volume_monthly?: number | null
+          serialisation_level?: SerialisationLevel | "mixed"
+          state?: string | null
+          address?: string | null
+          phone?: string | null
+          website?: string | null
+          nafdac_certificate_url?: string | null
+          cac_certificate_url?: string | null
+          verification_status?: ManufacturerVerificationStatus
+          auto_check_result?: Record<string, unknown> | null
+          auto_checked_at?: string | null
+          manual_reviewed_by?: string | null
+          manual_reviewed_at?: string | null
+          rejection_reason?: string | null
+          subscription_tier?: ManufacturerSubscriptionTier
+          subscription_started_at?: string | null
+          monthly_unit_limit?: number
+          units_generated_this_month?: number
           created_at?: string
+          updated_at?: string
         }
         Update: {
           id?: string
@@ -433,7 +499,28 @@ export interface Database {
           registration_document_url?: string | null
           is_verified?: boolean
           verified_at?: string | null
+          cac_number?: string | null
+          product_categories?: string[]
+          production_volume_monthly?: number | null
+          serialisation_level?: SerialisationLevel | "mixed"
+          state?: string | null
+          address?: string | null
+          phone?: string | null
+          website?: string | null
+          nafdac_certificate_url?: string | null
+          cac_certificate_url?: string | null
+          verification_status?: ManufacturerVerificationStatus
+          auto_check_result?: Record<string, unknown> | null
+          auto_checked_at?: string | null
+          manual_reviewed_by?: string | null
+          manual_reviewed_at?: string | null
+          rejection_reason?: string | null
+          subscription_tier?: ManufacturerSubscriptionTier
+          subscription_started_at?: string | null
+          monthly_unit_limit?: number
+          units_generated_this_month?: number
           created_at?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -441,6 +528,109 @@ export interface Database {
             columns: ["id"]
             isOneToOne: true
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      manufacturer_machines: {
+        Row: {
+          id: string
+          manufacturer_id: string
+          machine_name: string
+          machine_brand: string
+          machine_model: string | null
+          machine_category: MachineCategory
+          serialisation_level: SerialisationLevel
+          units_per_hour: number | null
+          ai_detected_brand: string | null
+          ai_detected_model: string | null
+          ai_recommended_format: string | null
+          ai_format_confidence: number | null
+          ai_format_reasoning: string | null
+          ai_detected_at: string | null
+          custom_format_notes: string | null
+          is_primary: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          manufacturer_id: string
+          machine_name: string
+          machine_brand: string
+          machine_model?: string | null
+          machine_category: MachineCategory
+          serialisation_level: SerialisationLevel
+          units_per_hour?: number | null
+          ai_detected_brand?: string | null
+          ai_detected_model?: string | null
+          ai_recommended_format?: string | null
+          ai_format_confidence?: number | null
+          ai_format_reasoning?: string | null
+          ai_detected_at?: string | null
+          custom_format_notes?: string | null
+          is_primary?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          manufacturer_id?: string
+          machine_name?: string
+          machine_brand?: string
+          machine_model?: string | null
+          machine_category?: MachineCategory
+          serialisation_level?: SerialisationLevel
+          units_per_hour?: number | null
+          ai_detected_brand?: string | null
+          ai_detected_model?: string | null
+          ai_recommended_format?: string | null
+          ai_format_confidence?: number | null
+          ai_format_reasoning?: string | null
+          ai_detected_at?: string | null
+          custom_format_notes?: string | null
+          is_primary?: boolean
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manufacturer_machines_manufacturer_id_fkey"
+            columns: ["manufacturer_id"]
+            isOneToOne: false
+            referencedRelation: "manufacturer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      manufacturer_keys: {
+        Row: {
+          id: string
+          manufacturer_id: string
+          public_key: string
+          key_algorithm: string
+          created_at: string
+          rotated_at: string | null
+        }
+        Insert: {
+          id?: string
+          manufacturer_id: string
+          public_key: string
+          key_algorithm?: string
+          created_at?: string
+          rotated_at?: string | null
+        }
+        Update: {
+          id?: string
+          manufacturer_id?: string
+          public_key?: string
+          key_algorithm?: string
+          created_at?: string
+          rotated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manufacturer_keys_manufacturer_id_fkey"
+            columns: ["manufacturer_id"]
+            isOneToOne: true
+            referencedRelation: "manufacturer_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -457,6 +647,18 @@ export interface Database {
           total_units: number
           codes_generated: number
           status: SerialisedProductStatus
+          machine_id: string | null
+          serialisation_level: SerialisationLevel
+          units_per_carton: number | null
+          cartons_per_pallet: number | null
+          export_format: string | null
+          export_count: number
+          last_exported_at: string | null
+          product_category: string | null
+          product_image_url: string | null
+          description: string | null
+          storage_conditions: string | null
+          country_of_origin: string
           created_at: string
         }
         Insert: {
@@ -470,6 +672,18 @@ export interface Database {
           total_units: number
           codes_generated?: number
           status?: SerialisedProductStatus
+          machine_id?: string | null
+          serialisation_level?: SerialisationLevel
+          units_per_carton?: number | null
+          cartons_per_pallet?: number | null
+          export_format?: string | null
+          export_count?: number
+          last_exported_at?: string | null
+          product_category?: string | null
+          product_image_url?: string | null
+          description?: string | null
+          storage_conditions?: string | null
+          country_of_origin?: string
           created_at?: string
         }
         Update: {
@@ -483,6 +697,18 @@ export interface Database {
           total_units?: number
           codes_generated?: number
           status?: SerialisedProductStatus
+          machine_id?: string | null
+          serialisation_level?: SerialisationLevel
+          units_per_carton?: number | null
+          cartons_per_pallet?: number | null
+          export_format?: string | null
+          export_count?: number
+          last_exported_at?: string | null
+          product_category?: string | null
+          product_image_url?: string | null
+          description?: string | null
+          storage_conditions?: string | null
+          country_of_origin?: string
           created_at?: string
         }
         Relationships: [
@@ -505,6 +731,14 @@ export interface Database {
           first_scanned_by: string | null
           first_scanned_location: string | null
           scan_count: number
+          serialisation_level: SerialisationLevel
+          carton_serial: string | null
+          pallet_serial: string | null
+          qr_payload: string | null
+          signature: string | null
+          is_flagged: boolean
+          flag_reason: string | null
+          duplicate_scan_count: number
           created_at: string
         }
         Insert: {
@@ -516,6 +750,14 @@ export interface Database {
           first_scanned_by?: string | null
           first_scanned_location?: string | null
           scan_count?: number
+          serialisation_level?: SerialisationLevel
+          carton_serial?: string | null
+          pallet_serial?: string | null
+          qr_payload?: string | null
+          signature?: string | null
+          is_flagged?: boolean
+          flag_reason?: string | null
+          duplicate_scan_count?: number
           created_at?: string
         }
         Update: {
@@ -527,6 +769,14 @@ export interface Database {
           first_scanned_by?: string | null
           first_scanned_location?: string | null
           scan_count?: number
+          serialisation_level?: SerialisationLevel
+          carton_serial?: string | null
+          pallet_serial?: string | null
+          qr_payload?: string | null
+          signature?: string | null
+          is_flagged?: boolean
+          flag_reason?: string | null
+          duplicate_scan_count?: number
           created_at?: string
         }
         Relationships: [
@@ -550,6 +800,10 @@ export interface Database {
           scan_source: ScanEventSource
           result: ScanEventResult
           device_info: string | null
+          user_agent: string | null
+          is_duplicate: boolean
+          duplicate_of: string | null
+          auto_reported: boolean
         }
         Insert: {
           id?: string
@@ -561,6 +815,10 @@ export interface Database {
           scan_source?: ScanEventSource
           result: ScanEventResult
           device_info?: string | null
+          user_agent?: string | null
+          is_duplicate?: boolean
+          duplicate_of?: string | null
+          auto_reported?: boolean
         }
         Update: {
           id?: string
@@ -572,6 +830,10 @@ export interface Database {
           scan_source?: ScanEventSource
           result?: ScanEventResult
           device_info?: string | null
+          user_agent?: string | null
+          is_duplicate?: boolean
+          duplicate_of?: string | null
+          auto_reported?: boolean
         }
         Relationships: [
           {
