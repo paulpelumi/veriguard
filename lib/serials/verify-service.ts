@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 
+import { verifyQrSignature } from "@/lib/manufacturers/crypto-signer"
 import type { SerialVerificationResult } from "@/types"
 import type { Database } from "@/types/database"
 
@@ -45,6 +46,10 @@ export async function verifySerial(
       manufacturer: null,
       scan_count: 0,
       first_scanned_at: null,
+      first_scanned_location: null,
+      signature_valid: null,
+      is_flagged: false,
+      report_reference: null,
       message:
         "This serial code was not found in VeriGuard's registry. It may be counterfeit, or not yet activated by the manufacturer.",
     }
@@ -59,29 +64,85 @@ export async function verifySerial(
   const { data: manufacturer } = batch
     ? await supabase
         .from("manufacturer_profiles")
-        .select("company_name, is_verified")
+        .select("company_name, verification_status")
         .eq("id", batch.manufacturer_id)
         .maybeSingle()
     : { data: null }
 
+  // Verified only when both the batch and a signature actually exist -
+  // legacy serials generated before Module 4 (no qr_payload/signature at
+  // all) read as "unknown" (null) rather than false, since there's
+  // nothing to have tampered with. An explicit verify() failure on a
+  // signed serial is what actually means "tampered".
+  let signatureValid: boolean | null = null
+  if (batch && scan.qr_payload && scan.signature) {
+    const { data: keyRow } = await supabase
+      .from("manufacturer_keys")
+      .select("public_key")
+      .eq("manufacturer_id", batch.manufacturer_id)
+      .maybeSingle()
+
+    if (keyRow?.public_key) {
+      try {
+        signatureValid = verifyQrSignature(JSON.parse(scan.qr_payload), scan.signature, keyRow.public_key)
+      } catch {
+        signatureValid = false
+      }
+    }
+  }
+
+  const product = batch
+    ? {
+        name: batch.product_name,
+        nafdac_number: batch.nafdac_number,
+        batch_number: batch.batch_number,
+        expiry_date: batch.expiry_date,
+      }
+    : null
+
+  const manufacturerInfo = manufacturer
+    ? { name: manufacturer.company_name, is_verified: manufacturer.verification_status === "approved" }
+    : null
+
+  // Only set on the one call that actually inserted a new report (the
+  // first duplicate detected for this serial) - repeat scans of an
+  // already-flagged code don't create a second report to reference.
+  const reportReference = scan.report_id ? `VG-RPT-${scan.report_id.slice(0, 8).toUpperCase()}` : null
+
+  if (signatureValid === false) {
+    return {
+      status: "tampered",
+      serial,
+      product,
+      manufacturer: manufacturerInfo,
+      scan_count: scan.new_scan_count,
+      first_scanned_at: scan.first_scanned_at,
+      first_scanned_location: scan.first_scanned_location,
+      signature_valid: false,
+      is_flagged: scan.is_flagged,
+      report_reference: reportReference,
+      message:
+        "This QR code's signature could not be verified. The data may have been altered or forged - this product may not be genuine.",
+    }
+  }
+
   return {
     status: scan.is_first_scan ? "verified_first_scan" : "verified_duplicate_scan",
     serial,
-    product: batch
-      ? {
-          name: batch.product_name,
-          nafdac_number: batch.nafdac_number,
-          batch_number: batch.batch_number,
-          expiry_date: batch.expiry_date,
-        }
-      : null,
-    manufacturer: manufacturer
-      ? { name: manufacturer.company_name, is_verified: manufacturer.is_verified }
-      : null,
+    product,
+    manufacturer: manufacturerInfo,
     scan_count: scan.new_scan_count,
     first_scanned_at: scan.first_scanned_at,
+    first_scanned_location: scan.first_scanned_location,
+    signature_valid: signatureValid,
+    is_flagged: scan.is_flagged,
+    report_reference: reportReference,
     message: scan.is_first_scan
       ? "This is the first scan of this serial code - a strong signal of authenticity."
-      : `This serial code has been scanned ${scan.new_scan_count} time(s), first on ${scan.first_scanned_at ? new Date(scan.first_scanned_at).toLocaleDateString() : "an earlier date"}. Seeing the same code on multiple physical products is a counterfeiting red flag - though re-scanning your own item is also normal.`,
+      : `DUPLICATE DETECTED: this serial code was already scanned ${scan.new_scan_count} time(s), first ${
+          scan.first_scanned_location ? `in ${scan.first_scanned_location}` : "at an earlier date"
+        }${
+          scan.first_scanned_at ? ` on ${new Date(scan.first_scanned_at).toLocaleDateString()}` : ""
+        }. The same code cannot genuinely be on two different products - this is likely counterfeit. A report has been sent to the manufacturer.`,
   }
 }

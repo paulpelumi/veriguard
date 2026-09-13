@@ -1176,6 +1176,13 @@ export interface Database {
           is_first_scan: boolean
           new_scan_count: number
           first_scanned_at: string | null
+          first_scanned_location: string | null
+          is_duplicate: boolean
+          duplicate_scan_count: number
+          is_flagged: boolean
+          qr_payload: string | null
+          signature: string | null
+          report_id: string | null
         }[]
       }
       is_admin: {

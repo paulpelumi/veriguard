@@ -176,6 +176,15 @@ export function formatSerialResultMessage(result: SerialVerificationResult): str
     )
   }
 
+  if (result.status === "tampered") {
+    return (
+      "🚨 *SIGNATURE INVALID*\n\n" +
+      "This QR code's signature could not be verified - the data may have been altered or forged. " +
+      "This product may not be genuine.\n\n" +
+      "To report this product, type: REPORT"
+    )
+  }
+
   if (result.status === "not_found") {
     return (
       "⚠️ *SERIAL NOT FOUND*\n\n" +

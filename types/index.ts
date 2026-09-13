@@ -85,6 +85,7 @@ export interface NafdacVerificationResult {
 export type SerialVerificationStatus =
   | "verified_first_scan"
   | "verified_duplicate_scan"
+  | "tampered"
   | "not_found"
   | "error"
 
@@ -103,6 +104,10 @@ export interface SerialVerificationResult {
   } | null
   scan_count: number
   first_scanned_at: string | null
+  first_scanned_location: string | null
+  signature_valid: boolean | null
+  is_flagged: boolean
+  report_reference: string | null
   message: string
 }
 

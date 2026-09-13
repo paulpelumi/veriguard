@@ -35,6 +35,7 @@ export const navIcons = {
   manufacturers: Factory,
   batches: Layers,
   generate: QrCode,
+  alerts: AlertTriangle,
 } as const
 
 export type IconName = keyof typeof navIcons
@@ -75,14 +76,14 @@ export const adminNavItems: NavItem[] = [
   { label: "Platform Settings", href: "/admin/settings", icon: "settings" },
 ]
 
-// Grows one item per module as each actually ships (Module 4 added
-// Products & Batches and Generate Codes; Scan Analytics and Duplicate
-// Alerts follow with Modules 5-6) - never a nav link pointing at a page
-// that doesn't exist yet.
+// Grows one item per module as each actually ships (Module 5 added
+// Duplicate Alerts; Scan Analytics follows with Module 6) - never a nav
+// link pointing at a page that doesn't exist yet.
 export const manufacturerNavItems: NavItem[] = [
   { label: "Dashboard", href: "/manufacturer/dashboard", icon: "dashboard" },
   { label: "My Machines", href: "/manufacturer/machines", icon: "manufacturers" },
   { label: "Products & Batches", href: "/manufacturer/batches", icon: "batches" },
   { label: "Generate Codes", href: "/manufacturer/generate", icon: "generate" },
+  { label: "Duplicate Alerts", href: "/manufacturer/alerts", icon: "alerts" },
   { label: "Settings", href: "/manufacturer/settings", icon: "settings" },
 ]
