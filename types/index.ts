@@ -21,6 +21,7 @@ export type VerificationAnomaly = Database["public"]["Tables"]["verification_ano
 export type GeographicStats = Database["public"]["Tables"]["geographic_stats"]["Row"]
 export type ManufacturerMachine = Database["public"]["Tables"]["manufacturer_machines"]["Row"]
 export type ManufacturerKey = Database["public"]["Tables"]["manufacturer_keys"]["Row"]
+export type ManufacturerProduct = Database["public"]["Tables"]["manufacturer_products"]["Row"]
 
 export type NafdacVerificationStatus =
   | "verified"

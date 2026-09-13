@@ -636,10 +636,58 @@ export interface Database {
           },
         ]
       }
+      manufacturer_products: {
+        Row: {
+          id: string
+          manufacturer_id: string
+          product_name: string
+          nafdac_number: string
+          product_category: string | null
+          description: string | null
+          standard_batch_size: number | null
+          product_image_url: string | null
+          storage_conditions: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          manufacturer_id: string
+          product_name: string
+          nafdac_number: string
+          product_category?: string | null
+          description?: string | null
+          standard_batch_size?: number | null
+          product_image_url?: string | null
+          storage_conditions?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          manufacturer_id?: string
+          product_name?: string
+          nafdac_number?: string
+          product_category?: string | null
+          description?: string | null
+          standard_batch_size?: number | null
+          product_image_url?: string | null
+          storage_conditions?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manufacturer_products_manufacturer_id_fkey"
+            columns: ["manufacturer_id"]
+            isOneToOne: false
+            referencedRelation: "manufacturer_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       serialised_products: {
         Row: {
           id: string
           manufacturer_id: string
+          product_id: string | null
           nafdac_number: string
           product_name: string
           batch_number: string
@@ -665,6 +713,7 @@ export interface Database {
         Insert: {
           id?: string
           manufacturer_id: string
+          product_id?: string | null
           nafdac_number: string
           product_name: string
           batch_number: string
@@ -690,6 +739,7 @@ export interface Database {
         Update: {
           id?: string
           manufacturer_id?: string
+          product_id?: string | null
           nafdac_number?: string
           product_name?: string
           batch_number?: string
