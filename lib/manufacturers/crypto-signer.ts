@@ -11,9 +11,13 @@ import crypto from "crypto"
 function getPilotPrivateKey(): string {
   const key = process.env.VERIGUARD_PILOT_PRIVATE_KEY
   if (!key) throw new Error("VERIGUARD_PILOT_PRIVATE_KEY is not set")
-  // Allow the key to be stored with literal "\n" escapes (common when
-  // pasting a multi-line PEM into a single-line env var UI like Vercel's).
-  return key.includes("-----BEGIN") ? key : key.replace(/\\n/g, "\n")
+  // Allow the key to be stored as a single line with literal "\n"
+  // escapes instead of real line breaks - common when an env var UI or
+  // .env file doesn't preserve a pasted multi-line value. Checking for
+  // "-----BEGIN" here would always be true regardless of which form the
+  // key is in (both contain that literal substring), so the actual test
+  // has to be for a real newline character already being present.
+  return key.includes("\n") ? key : key.replace(/\\n/g, "\n")
 }
 
 export function getPilotPublicKey(): string {
