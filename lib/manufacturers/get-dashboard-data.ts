@@ -46,7 +46,7 @@ export interface ManufacturerStateScanSummary {
 // instead of a single joined query because supabase-js has no server-side
 // join across three tables in one call; fine at pilot scale, worth revisiting
 // as an RPC once Module 4 is generating real volume.
-async function getBatchIds(supabase: SupabaseServerClient, manufacturerId: string): Promise<string[]> {
+export async function getBatchIds(supabase: SupabaseServerClient, manufacturerId: string): Promise<string[]> {
   const { data } = await supabase
     .from("serialised_products")
     .select("id")
@@ -54,7 +54,7 @@ async function getBatchIds(supabase: SupabaseServerClient, manufacturerId: strin
   return (data ?? []).map((row) => row.id)
 }
 
-async function getSerialIds(supabase: SupabaseServerClient, batchIds: string[]): Promise<string[]> {
+export async function getSerialIds(supabase: SupabaseServerClient, batchIds: string[]): Promise<string[]> {
   if (batchIds.length === 0) return []
   const { data } = await supabase.from("product_serials").select("id").in("batch_id", batchIds)
   return (data ?? []).map((row) => row.id)
