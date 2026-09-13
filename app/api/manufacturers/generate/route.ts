@@ -143,32 +143,48 @@ export async function POST(request: Request) {
   const year = new Date(productionDate).getFullYear()
   const startingSequence = (existingSerialCount ?? 0) + 1
 
-  const rows = Array.from({ length: quantity }, (_, index) => {
-    const serialCode = formatSerialCode(manufacturerCode, year, startingSequence + index)
-    const payload = buildQrPayload({
-      serialCode,
-      nafdacNumber: product.nafdac_number,
-      productName: product.product_name,
-      manufacturerName: manufacturer.company_name,
-      batchNumber,
-      productionDate,
-      expiryDate,
-      serialisationLevel,
+  // The batch row above already exists once we get here, so any failure
+  // from this point on must delete it - otherwise a crash here (most
+  // likely VERIGUARD_PILOT_PRIVATE_KEY missing) leaves a "generated"
+  // batch sitting in the manufacturer's list with zero actual serials
+  // behind it.
+  let rows
+  try {
+    rows = Array.from({ length: quantity }, (_, index) => {
+      const serialCode = formatSerialCode(manufacturerCode, year, startingSequence + index)
+      const payload = buildQrPayload({
+        serialCode,
+        nafdacNumber: product.nafdac_number,
+        productName: product.product_name,
+        manufacturerName: manufacturer.company_name,
+        batchNumber,
+        productionDate,
+        expiryDate,
+        serialisationLevel,
+      })
+      return {
+        batch_id: batch.id,
+        serial_code: serialCode,
+        status: "unscanned" as const,
+        serialisation_level: serialisationLevel,
+        qr_payload: JSON.stringify(payload),
+        signature: signQrPayload(payload),
+      }
     })
-    return {
-      batch_id: batch.id,
-      serial_code: serialCode,
-      status: "unscanned" as const,
-      serialisation_level: serialisationLevel,
-      qr_payload: JSON.stringify(payload),
-      signature: signQrPayload(payload),
-    }
-  })
+  } catch (err) {
+    await serviceClient.from("serialised_products").delete().eq("id", batch.id)
+    console.error("[manufacturers/generate] Signing failed", err)
+    return NextResponse.json(
+      { error: { message: "Code signing is not configured correctly. Contact support.", code: "signing_unavailable" } },
+      { status: 502 }
+    )
+  }
 
   for (let i = 0; i < rows.length; i += INSERT_CHUNK_SIZE) {
     const chunk = rows.slice(i, i + INSERT_CHUNK_SIZE)
     const { error: insertError } = await serviceClient.from("product_serials").insert(chunk)
     if (insertError) {
+      await serviceClient.from("serialised_products").delete().eq("id", batch.id)
       return NextResponse.json(
         { error: { message: `Generation failed partway through: ${insertError.message}`, code: "insert_failed" } },
         { status: 500 }
