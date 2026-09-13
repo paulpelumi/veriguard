@@ -42,7 +42,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   const { data: serials, error: serialsError } = await supabase
     .from("product_serials")
-    .select("serial_code, qr_payload")
+    .select("serial_code")
     .eq("batch_id", batchId)
     .order("serial_code", { ascending: true })
 
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       expiryDate: batch.expiry_date,
       productName: batch.product_name,
     },
-    (serials ?? []).map((s) => ({ serialCode: s.serial_code, qrPayload: s.qr_payload ?? "" })),
+    (serials ?? []).map((s) => ({ serialCode: s.serial_code })),
     includeQr
   )
 

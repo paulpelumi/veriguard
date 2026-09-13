@@ -51,7 +51,10 @@ export interface QrPayloadInput {
 
 // Short single-letter keys keep the encoded QR payload as small as
 // possible - every byte here multiplies across however many codes get
-// generated and printed.
+// generated and printed. This is the record that gets signed and stored
+// (product_serials.qr_payload/signature) for Module 5's crypto check -
+// it is NOT what actually gets drawn as a QR code on the physical
+// product. See buildVerificationUrl below for that.
 export function buildQrPayload(input: QrPayloadInput) {
   return {
     vg: input.serialCode,
@@ -64,4 +67,14 @@ export function buildQrPayload(input: QrPayloadInput) {
     l: input.serialisationLevel,
     t: new Date().toISOString(),
   }
+}
+
+// What actually gets encoded as the QR code's visual data (export-engine.ts's
+// ZPL/XML/QR-column formats) - a URL, not the JSON payload above. A generic
+// phone camera scanning a QR code full of JSON just displays it as text;
+// scanning a URL opens it. Module 7's whole public-verification page only
+// works if this is what's actually printed on the product.
+export function buildVerificationUrl(serialCode: string): string {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://veriguard.ng"
+  return `${appUrl}/verify/serial/${serialCode}`
 }

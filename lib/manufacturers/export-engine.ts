@@ -1,8 +1,8 @@
+import { buildVerificationUrl } from "@/lib/manufacturers/code-generator"
 import type { ExportFormat } from "@/lib/manufacturers/machine-types"
 
 export interface ExportSerialRow {
   serialCode: string
-  qrPayload: string
 }
 
 export interface ExportBatchInfo {
@@ -63,7 +63,7 @@ export function generateExport(
       const rows = serials.map((s) =>
         [
           csvField(s.serialCode),
-          ...(includeQrData ? [csvField(s.qrPayload)] : []),
+          ...(includeQrData ? [csvField(buildVerificationUrl(s.serialCode))] : []),
           csvField(batch.batchNumber),
           csvField(batch.expiryDate),
           csvField(batch.productName),
@@ -85,7 +85,7 @@ export function generateExport(
           batch.batchNumber,
           toDdMmYyyy(batch.productionDate),
           toDdMmYyyy(batch.expiryDate),
-          ...(includeQrData ? [s.qrPayload] : []),
+          ...(includeQrData ? [buildVerificationUrl(s.serialCode)] : []),
         ].join(",")
       )
       return { content: [header, ...rows].join("\n"), mimeType: "text/csv", fileExtension: "csv" }
@@ -98,7 +98,7 @@ export function generateExport(
           toDdMmYyyy(batch.productionDate),
           toDdMmYyyy(batch.expiryDate),
           batch.productName,
-          ...(includeQrData ? [s.qrPayload] : []),
+          ...(includeQrData ? [buildVerificationUrl(s.serialCode)] : []),
         ].join("\t")
       )
       return { content: rows.join("\n"), mimeType: "text/tab-separated-values", fileExtension: "csv" }
@@ -114,7 +114,7 @@ export function generateExport(
           csvField(batch.productionDate),
           csvField(batch.expiryDate),
           csvField(batch.productName),
-          ...(includeQrData ? [csvField(s.qrPayload)] : []),
+          ...(includeQrData ? [csvField(buildVerificationUrl(s.serialCode))] : []),
         ].join(",")
       )
       return { content: [header, ...rows].join("\n"), mimeType: "text/csv", fileExtension: "csv" }
@@ -124,13 +124,16 @@ export function generateExport(
     }
     case "ZPL_ZEBRA": {
       const labels = serials.map(
-        (s) => `^XA^FO50,50^BQN,2,5^FDQA,${s.qrPayload}^FS^FO50,200^FDSerial: ${s.serialCode}^FS^XZ`
+        (s) => `^XA^FO50,50^BQN,2,5^FDQA,${buildVerificationUrl(s.serialCode)}^FS^FO50,200^FDSerial: ${s.serialCode}^FS^XZ`
       )
       return { content: labels.join("\n"), mimeType: "text/plain", fileExtension: "zpl" }
     }
     case "XML_SATO": {
       const labels = serials
-        .map((s) => `  <label><field name="SERIAL">${s.serialCode}</field><field name="QR">${escapeXml(s.qrPayload)}</field></label>`)
+        .map(
+          (s) =>
+            `  <label><field name="SERIAL">${s.serialCode}</field><field name="QR">${escapeXml(buildVerificationUrl(s.serialCode))}</field></label>`
+        )
         .join("\n")
       return {
         content: `<?xml version="1.0"?>\n<labels>\n${labels}\n</labels>`,
