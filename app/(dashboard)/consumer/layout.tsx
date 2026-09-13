@@ -5,6 +5,7 @@ import { ProfileCompletionModal } from "@/components/shared/profile-completion-m
 import { createClient } from "@/lib/supabase/server"
 import { consumerNavItems } from "@/lib/utils/navigation"
 import { shouldShowProfileCompletionModal } from "@/lib/utils/profile-completion"
+import { homeForRole } from "@/lib/utils/role-routing"
 
 export default async function ConsumerLayout({
   children,
@@ -26,17 +27,9 @@ export default async function ConsumerLayout({
     .eq("id", user.id)
     .single()
 
-  // This predates the admin/manufacturer roles (Module 7) and only ever
-  // considered two roles - an admin visiting here isn't "wrong", they
-  // just belong at /admin instead of being bounced to /business/dashboard,
-  // which would in turn bounce them right back here forever (neither
-  // layout's check can ever pass for a role that is genuinely neither).
-  if (profile?.role === "admin") {
-    redirect("/admin")
-  }
-
+  // homeForRole covers every role generically - see role-routing.ts.
   if (!profile || profile.role !== "consumer") {
-    redirect("/business/dashboard")
+    redirect(homeForRole(profile?.role))
   }
 
   return (

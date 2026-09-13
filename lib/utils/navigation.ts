@@ -12,6 +12,7 @@ import {
   Activity,
   Barcode,
   Map,
+  Factory,
 } from "lucide-react"
 
 export const navIcons = {
@@ -29,6 +30,7 @@ export const navIcons = {
   anomalies: Activity,
   gs1: Barcode,
   intelligence: Map,
+  manufacturers: Factory,
 } as const
 
 export type IconName = keyof typeof navIcons
@@ -60,10 +62,21 @@ export const consumerNavItems: NavItem[] = [
 export const adminNavItems: NavItem[] = [
   { label: "Overview", href: "/admin", icon: "dashboard" },
   { label: "Users", href: "/admin/users", icon: "users" },
+  { label: "Manufacturers", href: "/admin/manufacturers", icon: "manufacturers" },
   { label: "Counterfeit Reports", href: "/admin/reports", icon: "reports" },
   { label: "Recall Management", href: "/admin/recalls", icon: "recalls" },
   { label: "Anomalies", href: "/admin/anomalies", icon: "anomalies" },
   { label: "GS1 Database", href: "/admin/gs1", icon: "gs1" },
   { label: "Geographic Intelligence", href: "/admin/intelligence", icon: "intelligence" },
   { label: "Platform Settings", href: "/admin/settings", icon: "settings" },
+]
+
+// Minimal on purpose - Module 1 only needs a valid post-registration
+// redirect target. The full sidebar (My Machines, Products & Batches,
+// Generate Codes, Scan Analytics, Duplicate Alerts) is Module 2's own
+// scope; items are added here as each of those modules actually ships, so
+// there's never a nav link pointing at a page that doesn't exist yet.
+export const manufacturerNavItems: NavItem[] = [
+  { label: "Dashboard", href: "/manufacturer/dashboard", icon: "dashboard" },
+  { label: "Settings", href: "/manufacturer/settings", icon: "settings" },
 ]

@@ -7,6 +7,7 @@ import {
   CalendarClock,
   Copy,
   CreditCard,
+  Factory,
   ShieldAlert,
   ShieldCheck,
   ShieldX,
@@ -28,6 +29,7 @@ const typeIcons: Record<NotificationType, typeof CalendarClock> = {
   verification_approved: ShieldCheck,
   verification_rejected: ShieldX,
   subscription_reminder: CreditCard,
+  manufacturer_application: Factory,
 }
 
 interface NotificationItemProps {

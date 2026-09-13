@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 
+import { homeForRole, roleAreaForPath } from "@/lib/utils/role-routing"
 import type { Database } from "@/types/database"
 
 const AUTH_ROUTES = ["/login", "/register"]
@@ -9,15 +10,11 @@ const AUTH_ROUTES = ["/login", "/register"]
 // first written (Phase 1) and stayed missed through every later addition
 // (Module 8's /privacy, this module's /offline, and Global Improvement 2's
 // /verify/[nafdacNumber]), so each silently required a login the entire
-// time despite being built as public pages.
+// time despite being built as public pages. /register/manufacturer needs
+// its own auth-route treatment too (see below) since it's nested under
+// /register but is itself a public, pre-login page.
 const PUBLIC_ROUTES = ["/", "/privacy", "/offline", ...AUTH_ROUTES]
-const PUBLIC_PREFIXES = ["/verify/"]
-
-function homeForRole(role: string | undefined): string {
-  if (role === "admin") return "/admin"
-  if (role === "business") return "/business/dashboard"
-  return "/consumer/dashboard"
-}
+const PUBLIC_PREFIXES = ["/verify/", "/register/"]
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
@@ -50,7 +47,7 @@ export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl
   const isPublicRoute =
     PUBLIC_ROUTES.includes(pathname) || PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix))
-  const isAuthRoute = AUTH_ROUTES.includes(pathname)
+  const isAuthRoute = AUTH_ROUTES.includes(pathname) || pathname.startsWith("/register/")
   const isApiRoute = pathname.startsWith("/api/")
 
   // API routes return JSON to fetch() callers, not pages - redirecting them
@@ -105,40 +102,18 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(redirectUrl)
     }
 
-    const isAdminRoute = pathname.startsWith("/admin")
-    const isBusinessRoute = pathname.startsWith("/business")
-    const isConsumerRoute = pathname.startsWith("/consumer")
-    const isAdmin = profile?.role === "admin"
-
-    // Module 7: anyone accessing /admin/* without role = 'admin' is
-    // redirected to their own dashboard. This is the real route-protection
-    // layer - lib/supabase/require-admin.ts's page-level guard (added in
-    // Module 6, before this existed) stays in place too as a convenience
-    // for pulling the current user/session, not as the security boundary.
-    if (isAdminRoute && !isAdmin) {
+    // Generic role-area guard (Phase 4): every dashboard area belongs to
+    // exactly one role (roleAreaForPath), and anyone whose actual role
+    // doesn't match the area they're in gets sent to their own home. One
+    // rule for all four roles instead of a pairwise check per role, which
+    // is what caused Phase 3's infinite redirect loop the first time a
+    // third role (admin) showed up against code that only knew about two.
+    const currentArea = roleAreaForPath(pathname)
+    if (currentArea && profile.role !== currentArea) {
       const redirectUrl = request.nextUrl.clone()
       redirectUrl.search = ""
-      redirectUrl.pathname = homeForRole(profile?.role)
+      redirectUrl.pathname = homeForRole(profile.role)
       return NextResponse.redirect(redirectUrl)
-    }
-
-    // An admin isn't a business or consumer, but nothing requires bouncing
-    // them out of those areas if they navigate there directly - only the
-    // actual business/consumer roles are mutually exclusive here.
-    if (!isAdmin) {
-      if (isBusinessRoute && profile?.role !== "business") {
-        const redirectUrl = request.nextUrl.clone()
-        redirectUrl.search = ""
-        redirectUrl.pathname = "/consumer/dashboard"
-        return NextResponse.redirect(redirectUrl)
-      }
-
-      if (isConsumerRoute && profile?.role !== "consumer") {
-        const redirectUrl = request.nextUrl.clone()
-        redirectUrl.search = ""
-        redirectUrl.pathname = "/business/dashboard"
-        return NextResponse.redirect(redirectUrl)
-      }
     }
   }
 

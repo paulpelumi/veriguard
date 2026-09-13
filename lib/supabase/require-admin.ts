@@ -1,15 +1,11 @@
 import { redirect } from "next/navigation"
 
 import { createClient } from "@/lib/supabase/server"
+import { homeForRole } from "@/lib/utils/role-routing"
 
-// The real admin-area route protection (middleware-level, covering every
-// /admin/* route) is Module 7's job - it doesn't exist yet, so this page-
-// level guard exists only so /admin/intelligence itself is never reachable
-// unprotected in the meantime. Deliberately minimal and scoped to one page
-// rather than touching proxy.ts (this project's Next.js 16 middleware
-// equivalent), so it doesn't preempt Module 7's broader implementation.
-// Mirrors the existing business/consumer redirect pattern in
-// lib/supabase/middleware.ts.
+// Module 7's middleware-level guard (lib/supabase/middleware.ts) is the
+// real admin-area route protection covering every /admin/* route - this
+// page-level guard is defense in depth, not the security boundary.
 export async function requireAdmin() {
   const supabase = await createClient()
   const {
@@ -26,7 +22,7 @@ export async function requireAdmin() {
   ])
 
   if (!isAdmin) {
-    redirect(profile?.role === "business" ? "/business/dashboard" : "/consumer/dashboard")
+    redirect(homeForRole(profile?.role))
   }
 
   return { supabase, user }

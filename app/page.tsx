@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ShieldCheck, Store, User, CheckCircle2 } from "lucide-react"
+import { ShieldCheck, Store, User, CheckCircle2, Factory } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -23,6 +23,14 @@ const businessBenefits = [
   "Track inventory with expiry alerts before it's too late",
   "Verify NAFDAC numbers right at stock entry",
   "Cross-check your stock against active recalls automatically",
+]
+
+const manufacturerBenefits = [
+  "Generate unique serial codes per batch",
+  "Export codes for any coding machine or label printer",
+  "Real-time duplicate detection alerts",
+  "Supply chain tracking dashboard",
+  "NAFDAC compliance reporting",
 ]
 
 export default function LandingPage() {
@@ -53,7 +61,7 @@ export default function LandingPage() {
           </p>
         </div>
 
-        <div className="grid w-full max-w-3xl gap-6 sm:grid-cols-2">
+        <div className="grid w-full max-w-5xl gap-6 sm:grid-cols-2 lg:grid-cols-3">
           <Card className="flex flex-col">
             <CardHeader>
               <div className="mb-2 flex size-10 items-center justify-center rounded-lg bg-primary/10">
@@ -112,6 +120,38 @@ export default function LandingPage() {
                 render={<Link href="/register?role=business" />}
               >
                 Continue as Business
+              </Button>
+            </CardFooter>
+          </Card>
+
+          <Card className="flex flex-col">
+            <CardHeader>
+              <div className="mb-2 flex size-10 items-center justify-center rounded-lg bg-primary/10">
+                <Factory className="size-5 text-primary" />
+              </div>
+              <CardTitle className="text-xl">I&apos;m a Manufacturer</CardTitle>
+              <CardDescription>
+                Generate serialised QR codes for your products. Protect your brand from
+                counterfeiting and track your products through the Nigerian supply chain.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1">
+              <ul className="flex flex-col gap-2 text-sm text-muted-foreground">
+                {manufacturerBenefits.map((benefit) => (
+                  <li key={benefit} className="flex items-start gap-2">
+                    <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-success" />
+                    {benefit}
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+            <CardFooter>
+              <Button
+                className="w-full"
+                nativeButton={false}
+                render={<Link href="/register/manufacturer" />}
+              >
+                Register as Manufacturer
               </Button>
             </CardFooter>
           </Card>

@@ -3,15 +3,11 @@ import { redirect } from "next/navigation"
 import { DashboardShell } from "@/components/layout/dashboard-shell"
 import { ProfileCompletionModal } from "@/components/shared/profile-completion-modal"
 import { createClient } from "@/lib/supabase/server"
-import { businessNavItems } from "@/lib/utils/navigation"
+import { manufacturerNavItems } from "@/lib/utils/navigation"
 import { shouldShowProfileCompletionModal } from "@/lib/utils/profile-completion"
 import { homeForRole } from "@/lib/utils/role-routing"
 
-export default async function BusinessLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default async function ManufacturerLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
   const {
     data: { user },
@@ -27,23 +23,24 @@ export default async function BusinessLayout({
     .eq("id", user.id)
     .single()
 
-  // homeForRole covers every role generically, so this correctly sends a
-  // manufacturer/admin/consumer to their own home instead of just the one
-  // other role this layout used to know about (see role-routing.ts).
-  if (!profile || profile.role !== "business") {
+  if (!profile || profile.role !== "manufacturer") {
     redirect(homeForRole(profile?.role))
   }
 
   return (
     <>
+      {/* Registration (Module 1) already collects phone, state, and
+          address up front, so this rarely fires for a manufacturer - it's
+          here for the same reason as every other role, not because
+          manufacturers specifically need prompting. */}
       <ProfileCompletionModal
         userId={user.id}
         role={profile.role}
         defaultOpen={shouldShowProfileCompletionModal(profile)}
       />
       <DashboardShell
-        navItems={businessNavItems}
-        homeHref="/business/dashboard"
+        navItems={manufacturerNavItems}
+        homeHref="/manufacturer/dashboard"
         fullName={profile.full_name}
         email={profile.email}
         role={profile.role}

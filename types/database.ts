@@ -49,6 +49,7 @@ export type NotificationType =
   | "verification_approved"
   | "verification_rejected"
   | "subscription_reminder"
+  | "manufacturer_application"
 
 export type SerialisationLevel = "unit" | "carton" | "pallet"
 export type ManufacturerVerificationStatus =
