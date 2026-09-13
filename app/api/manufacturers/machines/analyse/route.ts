@@ -105,13 +105,25 @@ export async function POST(request: Request) {
 
   const client = new Anthropic()
 
-  const response = await client.messages.create({
-    model: "claude-opus-5",
-    max_tokens: 1024,
-    output_config: { effort: "medium" },
-    system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: buildUserPrompt(description, serialisationLevel, unitsPerHour) }],
-  })
+  let response
+  try {
+    response = await client.messages.create({
+      model: "claude-opus-5",
+      max_tokens: 1024,
+      output_config: { effort: "medium" },
+      system: SYSTEM_PROMPT,
+      messages: [{ role: "user", content: buildUserPrompt(description, serialisationLevel, unitsPerHour) }],
+    })
+  } catch (err) {
+    const message =
+      err instanceof Anthropic.AuthenticationError
+        ? "Machine analysis is not configured (invalid or missing API key)."
+        : err instanceof Anthropic.RateLimitError
+          ? "Machine analysis is temporarily rate-limited. Try again shortly."
+          : "Machine analysis service is unavailable right now."
+    console.error("[machines/analyse] Anthropic API call failed", err)
+    return NextResponse.json({ error: { message, code: "analysis_unavailable" } }, { status: 502 })
+  }
 
   const textBlock = response.content.find((block) => block.type === "text")
   const rawJson = textBlock?.text.trim().replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "")
