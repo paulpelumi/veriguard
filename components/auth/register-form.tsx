@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Controller, useForm, useWatch } from "react-hook-form"
 import { toast } from "sonner"
 
+import { GoogleSignInButton } from "@/components/auth/google-signin-button"
 import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -21,6 +22,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { createClient } from "@/lib/supabase/client"
 import { businessTypeOptions } from "@/lib/utils/constants"
 import { nigerianStates } from "@/lib/utils/nigerian-states"
+import { homeForRole } from "@/lib/utils/role-routing"
 import { registerSchema, type RegisterFormValues } from "@/lib/validations/auth"
 
 interface RegisterFormProps {
@@ -83,7 +85,7 @@ export function RegisterForm({ defaultRole }: RegisterFormProps) {
       return
     }
 
-    router.push(values.role === "business" ? "/business/dashboard" : "/consumer/dashboard")
+    router.push(homeForRole(values.role))
     router.refresh()
   }
 
@@ -208,6 +210,17 @@ export function RegisterForm({ defaultRole }: RegisterFormProps) {
       <Button type="submit" disabled={isSubmitting} className="w-full">
         {isSubmitting ? "Creating account..." : "Create account"}
       </Button>
+
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t border-border" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-card px-2 text-muted-foreground">Or</span>
+        </div>
+      </div>
+
+      <GoogleSignInButton />
 
       <p className="text-center text-sm text-muted-foreground">
         Already have an account?{" "}

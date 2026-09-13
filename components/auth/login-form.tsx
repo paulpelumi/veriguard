@@ -7,10 +7,12 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 
+import { GoogleSignInButton } from "@/components/auth/google-signin-button"
 import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { createClient } from "@/lib/supabase/client"
+import { homeForRole } from "@/lib/utils/role-routing"
 import { loginSchema, type LoginFormValues } from "@/lib/validations/auth"
 
 export function LoginForm() {
@@ -42,9 +44,8 @@ export function LoginForm() {
       .single()
 
     const redirectTo = searchParams.get("redirectTo")
-    const fallback = profile?.role === "business" ? "/business/dashboard" : "/consumer/dashboard"
 
-    router.push(redirectTo || fallback)
+    router.push(redirectTo || homeForRole(profile?.role))
     router.refresh()
   }
 
@@ -77,6 +78,17 @@ export function LoginForm() {
       <Button type="submit" disabled={isSubmitting} className="w-full">
         {isSubmitting ? "Logging in..." : "Log in"}
       </Button>
+
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t border-border" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-card px-2 text-muted-foreground">Or</span>
+        </div>
+      </div>
+
+      <GoogleSignInButton />
 
       <p className="text-center text-sm text-muted-foreground">
         Don&apos;t have an account?{" "}

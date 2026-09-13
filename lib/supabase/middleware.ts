@@ -15,6 +15,14 @@ const AUTH_ROUTES = ["/login", "/register"]
 // /register but is itself a public, pre-login page.
 const PUBLIC_ROUTES = ["/", "/privacy", "/offline", "/report", ...AUTH_ROUTES]
 const PUBLIC_PREFIXES = ["/verify/", "/register/"]
+// /register/manufacturer is deliberately NOT an "auth route" for the
+// redirect-away-if-already-logged-in check below, unlike every other
+// /register/* path - the OAuth role picker (app/onboarding/role) sends an
+// already-authenticated manufacturer candidate here, since Google
+// sign-in has no account-creation step for this wizard's Step 1 to
+// replace. Redirecting them away before they ever see the form would
+// silently break that entire path.
+const MANUFACTURER_REGISTER_ROUTE = "/register/manufacturer"
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
@@ -47,7 +55,9 @@ export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl
   const isPublicRoute =
     PUBLIC_ROUTES.includes(pathname) || PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix))
-  const isAuthRoute = AUTH_ROUTES.includes(pathname) || pathname.startsWith("/register/")
+  const isAuthRoute =
+    AUTH_ROUTES.includes(pathname) ||
+    (pathname.startsWith("/register/") && pathname !== MANUFACTURER_REGISTER_ROUTE)
   const isApiRoute = pathname.startsWith("/api/")
 
   // API routes return JSON to fetch() callers, not pages - redirecting them

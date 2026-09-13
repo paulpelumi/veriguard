@@ -117,6 +117,14 @@ export async function POST(request: Request) {
     )
   }
 
+  // A manual signup's profiles.role is already 'manufacturer' by the time
+  // this route runs (set via signUp()'s metadata, Module 1). An
+  // OAuth-authenticated caller arriving here from the role picker
+  // (app/onboarding/role) never had that step - profiles.role is still
+  // whatever handle_new_user's trigger defaulted it to ('consumer'). Safe
+  // to always set it here regardless of entry path.
+  await serviceClient.from("profiles").update({ role: "manufacturer" }).eq("id", userId)
+
   const autoCheck = await runAutoCheckAndNotify(serviceClient, userId, companyName)
 
   return NextResponse.json({

@@ -1,9 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
+import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -45,6 +46,24 @@ export function ManufacturerRegistrationForm() {
   const [documentErrors, setDocumentErrors] = useState<ReturnType<typeof validateDocumentFiles>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStage, setSubmitStage] = useState<string | null>(null)
+  // Someone arriving here already signed in (the OAuth role picker sends
+  // manufacturers here, since Google sign-in has no account-creation step
+  // of its own) skips Step 1 entirely - there's no account left to
+  // create. Only "phone" from that step is still needed downstream, so
+  // StepCompany picks up collecting just that field in this mode instead.
+  const [existingUserId, setExistingUserId] = useState<string | null>(null)
+  const [isCheckingSession, setIsCheckingSession] = useState(true)
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        setExistingUserId(data.user.id)
+        setCurrentStep(2)
+      }
+      setIsCheckingSession(false)
+    })
+  }, [])
 
   const form = useForm<ManufacturerRegistrationValues>({
     resolver: zodResolver(manufacturerRegistrationSchema),
@@ -85,7 +104,7 @@ export function ManufacturerRegistrationForm() {
   }
 
   function handleBack() {
-    setCurrentStep((step) => Math.max(1, step - 1))
+    setCurrentStep((step) => Math.max(existingUserId ? 2 : 1, step - 1))
   }
 
   async function handleSubmit() {
@@ -103,36 +122,44 @@ export function ManufacturerRegistrationForm() {
     const values = form.getValues()
     const supabase = createClient()
 
-    setSubmitStage("Creating your account...")
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-      email: values.email,
-      password: values.password,
-      options: {
-        data: {
-          full_name: values.fullName,
-          role: "manufacturer",
-          phone: values.phone,
-          state: values.state,
+    let userId: string
+    let hasSession: boolean
+
+    if (existingUserId) {
+      userId = existingUserId
+      hasSession = true
+    } else {
+      setSubmitStage("Creating your account...")
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: values.email,
+        password: values.password,
+        options: {
+          data: {
+            full_name: values.fullName,
+            role: "manufacturer",
+            phone: values.phone,
+            state: values.state,
+          },
         },
-      },
-    })
+      })
 
-    if (signUpError) {
-      toast.error(signUpError.message)
-      setIsSubmitting(false)
-      setSubmitStage(null)
-      return
+      if (signUpError) {
+        toast.error(signUpError.message)
+        setIsSubmitting(false)
+        setSubmitStage(null)
+        return
+      }
+
+      if (!signUpData.user) {
+        toast.error("Account creation failed unexpectedly. Please try again.")
+        setIsSubmitting(false)
+        setSubmitStage(null)
+        return
+      }
+
+      userId = signUpData.user.id
+      hasSession = !!signUpData.session
     }
-
-    if (!signUpData.user) {
-      toast.error("Account creation failed unexpectedly. Please try again.")
-      setIsSubmitting(false)
-      setSubmitStage(null)
-      return
-    }
-
-    const userId = signUpData.user.id
-    const hasSession = !!signUpData.session
 
     setSubmitStage("Submitting application...")
     const registrationData = new FormData()
@@ -182,21 +209,39 @@ export function ManufacturerRegistrationForm() {
     router.refresh()
   }
 
+  if (isCheckingSession) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <RegistrationProgress currentStep={currentStep} />
 
       {currentStep === 1 && <StepAccount form={form} />}
-      {currentStep === 2 && <StepCompany form={form} />}
+      {currentStep === 2 && <StepCompany form={form} showPhoneField={!!existingUserId} />}
       {currentStep === 3 && (
         <StepDocuments files={files} onChange={setFiles} errors={documentErrors} />
       )}
       {currentStep === 4 && (
-        <StepReview form={form} files={files} onEditStep={setCurrentStep} />
+        <StepReview
+          form={form}
+          files={files}
+          onEditStep={setCurrentStep}
+          hideAccountSummary={!!existingUserId}
+        />
       )}
 
       <div className="flex justify-between gap-3 pt-2">
-        <Button type="button" variant="outline" onClick={handleBack} disabled={currentStep === 1 || isSubmitting}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleBack}
+          disabled={currentStep === (existingUserId ? 2 : 1) || isSubmitting}
+        >
           Back
         </Button>
         {currentStep < TOTAL_STEPS ? (

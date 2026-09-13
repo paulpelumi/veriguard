@@ -75,6 +75,11 @@ export type ManufacturerRegistrationValues = z.infer<typeof manufacturerRegistra
 // Field groups for per-step validation via form.trigger(STEP_FIELDS.account).
 export const STEP_FIELDS = {
   account: ["fullName", "email", "password", "confirmPassword", "phone"],
+  // "phone" is already validated in Step 1 for a normal signup, so
+  // re-triggering it here is a no-op there - it's only load-bearing when
+  // Step 1 was skipped entirely (an already-authenticated caller, see
+  // ManufacturerRegistrationForm's existingUserId path), where this is
+  // the only place phone gets collected and validated at all.
   company: [
     "companyName",
     "cacNumber",
@@ -82,6 +87,7 @@ export const STEP_FIELDS = {
     "productionVolume",
     "state",
     "address",
+    "phone",
   ],
   review: ["agreeToTerms"],
 } as const satisfies Record<string, (keyof ManufacturerRegistrationValues)[]>

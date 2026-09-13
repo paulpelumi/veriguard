@@ -19,7 +19,15 @@ import {
   type ManufacturerRegistrationValues,
 } from "@/lib/validations/manufacturer-registration"
 
-export function StepCompany({ form }: { form: UseFormReturn<ManufacturerRegistrationValues> }) {
+interface StepCompanyProps {
+  form: UseFormReturn<ManufacturerRegistrationValues>
+  // True when Step 1 (Account) was skipped because the caller is already
+  // authenticated (the OAuth role picker) - phone is otherwise collected
+  // there, so this is the only place left to ask for it.
+  showPhoneField?: boolean
+}
+
+export function StepCompany({ form, showPhoneField = false }: StepCompanyProps) {
   const { errors } = form.formState
   const selectedCategories = useWatch({ control: form.control, name: "productCategories" }) ?? []
 
@@ -31,6 +39,14 @@ export function StepCompany({ form }: { form: UseFormReturn<ManufacturerRegistra
 
   return (
     <FieldGroup>
+      {showPhoneField && (
+        <Field data-invalid={!!errors.phone}>
+          <FieldLabel htmlFor="phone">Phone number</FieldLabel>
+          <Input id="phone" type="tel" placeholder="080..." autoComplete="tel" {...form.register("phone")} />
+          <FieldError errors={[errors.phone]} />
+        </Field>
+      )}
+
       <Field data-invalid={!!errors.companyName}>
         <FieldLabel htmlFor="companyName">Business / Company name</FieldLabel>
         <Input id="companyName" {...form.register("companyName")} />

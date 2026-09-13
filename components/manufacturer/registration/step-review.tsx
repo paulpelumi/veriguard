@@ -26,27 +26,34 @@ interface StepReviewProps {
   form: UseFormReturn<ManufacturerRegistrationValues>
   files: DocumentFiles
   onEditStep: (step: number) => void
+  // Account details came from an existing sign-in, not Step 1 (which never
+  // rendered) - full name/email would just show blank, and "Edit" would
+  // send them to a step with nothing to edit. Phone is still reviewable,
+  // just under Company since that's where it was actually collected.
+  hideAccountSummary?: boolean
 }
 
-export function StepReview({ form, files, onEditStep }: StepReviewProps) {
+export function StepReview({ form, files, onEditStep, hideAccountSummary = false }: StepReviewProps) {
   const values = form.getValues()
   const { errors } = form.formState
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="rounded-lg border border-border p-4">
-        <div className="mb-2 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-foreground">Account</h3>
-          <Button type="button" variant="ghost" size="sm" onClick={() => onEditStep(1)}>
-            Edit
-          </Button>
+      {!hideAccountSummary && (
+        <div className="rounded-lg border border-border p-4">
+          <div className="mb-2 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-foreground">Account</h3>
+            <Button type="button" variant="ghost" size="sm" onClick={() => onEditStep(1)}>
+              Edit
+            </Button>
+          </div>
+          <dl>
+            <SummaryRow label="Full name" value={values.fullName} />
+            <SummaryRow label="Email" value={values.email} />
+            <SummaryRow label="Phone" value={values.phone} />
+          </dl>
         </div>
-        <dl>
-          <SummaryRow label="Full name" value={values.fullName} />
-          <SummaryRow label="Email" value={values.email} />
-          <SummaryRow label="Phone" value={values.phone} />
-        </dl>
-      </div>
+      )}
 
       <div className="rounded-lg border border-border p-4">
         <div className="mb-2 flex items-center justify-between">
@@ -56,6 +63,7 @@ export function StepReview({ form, files, onEditStep }: StepReviewProps) {
           </Button>
         </div>
         <dl>
+          {hideAccountSummary && <SummaryRow label="Phone" value={values.phone} />}
           <SummaryRow label="Company name" value={values.companyName} />
           <SummaryRow label="CAC number" value={values.cacNumber} />
           <SummaryRow label="NAFDAC code" value={values.nafdacManufacturerCode ?? ""} />
