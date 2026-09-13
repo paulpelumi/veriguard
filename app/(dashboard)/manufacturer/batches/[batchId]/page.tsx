@@ -37,21 +37,33 @@ export default async function BatchDetailPage({ params }: { params: Promise<{ ba
           <CardTitle className="text-base">Batch Details</CardTitle>
         </CardHeader>
         <CardContent>
-          <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-3">
-            <dt className="text-muted-foreground">NAFDAC No.</dt>
-            <dd className="text-foreground">{batch.nafdac_number}</dd>
-            <dt className="text-muted-foreground">Codes Generated</dt>
-            <dd className="text-foreground">{batch.codes_generated.toLocaleString()}</dd>
-            <dt className="text-muted-foreground">Status</dt>
-            <dd>
-              <Badge className="border-transparent bg-primary/10 text-primary capitalize">{batch.status}</Badge>
-            </dd>
-            <dt className="text-muted-foreground">Production Date</dt>
-            <dd className="text-foreground">{formatDate(batch.production_date)}</dd>
-            <dt className="text-muted-foreground">Expiry Date</dt>
-            <dd className="text-foreground">{formatDate(batch.expiry_date)}</dd>
-            <dt className="text-muted-foreground">Serialisation</dt>
-            <dd className="text-foreground capitalize">{batch.serialisation_level}</dd>
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm sm:grid-cols-3">
+            <div>
+              <dt className="text-muted-foreground">NAFDAC No.</dt>
+              <dd className="mt-0.5 font-medium text-foreground">{batch.nafdac_number}</dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Codes Generated</dt>
+              <dd className="mt-0.5 font-medium text-foreground">{batch.codes_generated.toLocaleString()}</dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Status</dt>
+              <dd className="mt-1">
+                <Badge className="border-transparent bg-primary/10 text-primary capitalize">{batch.status}</Badge>
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Production Date</dt>
+              <dd className="mt-0.5 font-medium text-foreground">{formatDate(batch.production_date)}</dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Expiry Date</dt>
+              <dd className="mt-0.5 font-medium text-foreground">{formatDate(batch.expiry_date)}</dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Serialisation</dt>
+              <dd className="mt-0.5 font-medium text-foreground capitalize">{batch.serialisation_level}</dd>
+            </div>
           </dl>
         </CardContent>
       </Card>

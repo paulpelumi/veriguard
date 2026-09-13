@@ -30,16 +30,25 @@ export function ExportOptions({ batchId, recommendedFormat, lastExportedAt, expo
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <label className="flex items-start gap-2 text-sm text-foreground">
-        <Checkbox checked={includeQr} onCheckedChange={(checked) => setIncludeQr(checked === true)} />
-        Include QR code data (only matters if your machine&apos;s software can render a 2D barcode from a data field)
+    <div className="flex flex-col gap-5">
+      <label className="flex items-start gap-2 rounded-lg border border-border bg-muted/30 p-3 text-sm text-foreground">
+        <Checkbox
+          className="mt-0.5"
+          checked={includeQr}
+          onCheckedChange={(checked) => setIncludeQr(checked === true)}
+        />
+        <span>
+          <span className="font-medium">Include QR code data</span>
+          <span className="block text-muted-foreground">
+            Only matters if your machine&apos;s software can render a 2D barcode from a data field.
+          </span>
+        </span>
       </label>
 
       {recommendedFormat && IMPLEMENTED_EXPORT_FORMATS.includes(recommendedFormat) && (
         <div className="flex flex-col gap-2">
           <p className="text-sm font-medium text-foreground">⭐ Recommended for your machine</p>
-          <Button nativeButton={false} render={<a href={exportUrl(recommendedFormat)} />}>
+          <Button nativeButton={false} render={<a href={exportUrl(recommendedFormat)} />} className="w-fit">
             <Download className="size-4" />
             Download {EXPORT_FORMAT_LABELS[recommendedFormat]}
           </Button>
@@ -69,7 +78,7 @@ export function ExportOptions({ batchId, recommendedFormat, lastExportedAt, expo
       </div>
 
       {lastExportedAt && (
-        <p className="text-sm text-muted-foreground">
+        <p className="border-t border-border pt-3 text-sm text-muted-foreground">
           Last exported {formatDate(lastExportedAt)} · {exportCount} time{exportCount === 1 ? "" : "s"}
         </p>
       )}
