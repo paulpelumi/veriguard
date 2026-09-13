@@ -93,6 +93,8 @@ export function ManufacturerReviewPanel() {
     const data = await response.json().catch(() => null)
     if (response.ok && data) {
       setDocumentUrls({ nafdac: data.nafdac_certificate_url, cac: data.cac_certificate_url })
+    } else {
+      toast.error(data?.error?.message ?? "Failed to load documents")
     }
   }
 
@@ -243,6 +245,7 @@ export function ManufacturerReviewPanel() {
                 <Button
                   variant="outline"
                   size="sm"
+                  nativeButton={false}
                   disabled={!documentUrls.nafdac}
                   render={<a href={documentUrls.nafdac ?? undefined} target="_blank" rel="noreferrer" />}
                 >
@@ -251,6 +254,7 @@ export function ManufacturerReviewPanel() {
                 <Button
                   variant="outline"
                   size="sm"
+                  nativeButton={false}
                   disabled={!documentUrls.cac}
                   render={<a href={documentUrls.cac ?? undefined} target="_blank" rel="noreferrer" />}
                 >
