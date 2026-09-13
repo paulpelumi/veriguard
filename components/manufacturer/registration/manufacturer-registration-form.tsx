@@ -16,7 +16,6 @@ import {
   type DocumentFiles,
 } from "@/components/manufacturer/registration/step-documents"
 import { StepReview } from "@/components/manufacturer/registration/step-review"
-import { uploadManufacturerDocument } from "@/lib/manufacturers/upload-document"
 import { createClient } from "@/lib/supabase/client"
 import {
   manufacturerRegistrationSchema,
@@ -125,51 +124,58 @@ export function ManufacturerRegistrationForm() {
       return
     }
 
-    if (!signUpData.session || !signUpData.user) {
-      toast.success("Account created. Check your email to confirm before logging in.")
-      router.push("/login")
-      return
-    }
-
-    const userId = signUpData.user.id
-
-    setSubmitStage("Uploading documents...")
-    const [nafdacCertPath, cacCertPath] = await Promise.all([
-      uploadManufacturerDocument(supabase, userId, "nafdac-certificate", files.nafdacCertificate!),
-      uploadManufacturerDocument(supabase, userId, "cac-certificate", files.cacCertificate!),
-    ])
-
-    if (!nafdacCertPath || !cacCertPath) {
-      toast.error(
-        "Your account was created, but one or more documents failed to upload. You can retry from your dashboard."
-      )
-    }
-
-    setSubmitStage("Submitting application...")
-    const { error: profileError } = await supabase.from("manufacturer_profiles").insert({
-      id: userId,
-      company_name: values.companyName,
-      cac_number: values.cacNumber,
-      nafdac_manufacturer_code: values.nafdacManufacturerCode || null,
-      product_categories: values.productCategories,
-      production_volume_monthly: PRODUCTION_VOLUME_TO_MONTHLY_UNITS[values.productionVolume] ?? null,
-      state: values.state,
-      address: values.address,
-      phone: values.phone,
-      website: values.website || null,
-      nafdac_certificate_url: nafdacCertPath,
-      cac_certificate_url: cacCertPath,
-    })
-
-    if (profileError) {
-      toast.error(profileError.message)
+    if (!signUpData.user) {
+      toast.error("Account creation failed unexpectedly. Please try again.")
       setIsSubmitting(false)
       setSubmitStage(null)
       return
     }
 
-    setSubmitStage("Running verification check...")
-    await fetch("/api/manufacturers/verify", { method: "POST" }).catch(() => null)
+    const userId = signUpData.user.id
+    const hasSession = !!signUpData.session
+
+    setSubmitStage("Submitting application...")
+    const registrationData = new FormData()
+    registrationData.set("userId", userId)
+    registrationData.set("companyName", values.companyName)
+    registrationData.set("cacNumber", values.cacNumber)
+    registrationData.set("nafdacManufacturerCode", values.nafdacManufacturerCode ?? "")
+    registrationData.set("productCategories", JSON.stringify(values.productCategories))
+    registrationData.set(
+      "productionVolumeMonthly",
+      String(PRODUCTION_VOLUME_TO_MONTHLY_UNITS[values.productionVolume] ?? "")
+    )
+    registrationData.set("state", values.state)
+    registrationData.set("address", values.address)
+    registrationData.set("phone", values.phone)
+    registrationData.set("website", values.website ?? "")
+    registrationData.set("nafdacCertificate", files.nafdacCertificate!)
+    registrationData.set("cacCertificate", files.cacCertificate!)
+
+    const response = await fetch("/api/manufacturers/register", {
+      method: "POST",
+      body: registrationData,
+    })
+    const result = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      toast.error(result?.error?.message ?? "Failed to submit application")
+      setIsSubmitting(false)
+      setSubmitStage(null)
+      return
+    }
+
+    if (!result?.documents_uploaded) {
+      toast.error(
+        "Your application was submitted, but one or more documents failed to upload. Contact support to retry."
+      )
+    }
+
+    if (!hasSession) {
+      toast.success("Application submitted. Check your email to confirm your account, then log in.")
+      router.push("/login")
+      return
+    }
 
     toast.success("Application submitted. Our team will review it shortly.")
     router.push("/manufacturer/dashboard")
