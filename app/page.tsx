@@ -41,6 +41,9 @@ export default function LandingPage() {
         <Logo />
         <div className="flex items-center gap-2">
           <ThemeToggle />
+          <Button variant="ghost" nativeButton={false} render={<Link href="/pricing" />}>
+            Pricing
+          </Button>
           <Button variant="ghost" nativeButton={false} render={<Link href="/login" />}>
             Log in
           </Button>

@@ -1147,6 +1147,391 @@ export interface Database {
         }
         Relationships: []
       }
+      subscription_plans: {
+        Row: {
+          id: string
+          name: string
+          role: "consumer" | "business" | "manufacturer"
+          tier: string
+          price_monthly_kobo: number
+          price_yearly_kobo: number
+          features: Record<string, unknown>
+          limits: Record<string, unknown>
+          is_active: boolean
+          paystack_plan_code: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          role: "consumer" | "business" | "manufacturer"
+          tier: string
+          price_monthly_kobo?: number
+          price_yearly_kobo?: number
+          features?: Record<string, unknown>
+          limits?: Record<string, unknown>
+          is_active?: boolean
+          paystack_plan_code?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          role?: "consumer" | "business" | "manufacturer"
+          tier?: string
+          price_monthly_kobo?: number
+          price_yearly_kobo?: number
+          features?: Record<string, unknown>
+          limits?: Record<string, unknown>
+          is_active?: boolean
+          paystack_plan_code?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      user_subscriptions: {
+        Row: {
+          id: string
+          user_id: string
+          plan_id: string
+          paystack_subscription_code: string | null
+          paystack_customer_code: string | null
+          paystack_authorization_code: string | null
+          status: "active" | "cancelled" | "expired" | "paused" | "trial"
+          billing_cycle: "monthly" | "yearly"
+          current_period_start: string
+          current_period_end: string | null
+          cancelled_at: string | null
+          cancel_reason: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          plan_id: string
+          paystack_subscription_code?: string | null
+          paystack_customer_code?: string | null
+          paystack_authorization_code?: string | null
+          status?: "active" | "cancelled" | "expired" | "paused" | "trial"
+          billing_cycle?: "monthly" | "yearly"
+          current_period_start?: string
+          current_period_end?: string | null
+          cancelled_at?: string | null
+          cancel_reason?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          plan_id?: string
+          paystack_subscription_code?: string | null
+          paystack_customer_code?: string | null
+          paystack_authorization_code?: string | null
+          status?: "active" | "cancelled" | "expired" | "paused" | "trial"
+          billing_cycle?: "monthly" | "yearly"
+          current_period_start?: string
+          current_period_end?: string | null
+          cancelled_at?: string | null
+          cancel_reason?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      usage_records: {
+        Row: {
+          id: string
+          user_id: string
+          metric:
+            | "verifications"
+            | "inventory_items"
+            | "serial_codes_generated"
+            | "api_calls"
+            | "whatsapp_queries"
+            | "report_exports"
+          count: number
+          period_month: number
+          period_year: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          metric:
+            | "verifications"
+            | "inventory_items"
+            | "serial_codes_generated"
+            | "api_calls"
+            | "whatsapp_queries"
+            | "report_exports"
+          count?: number
+          period_month: number
+          period_year: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          metric?:
+            | "verifications"
+            | "inventory_items"
+            | "serial_codes_generated"
+            | "api_calls"
+            | "whatsapp_queries"
+            | "report_exports"
+          count?: number
+          period_month?: number
+          period_year?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
+      payment_history: {
+        Row: {
+          id: string
+          user_id: string
+          subscription_id: string | null
+          paystack_reference: string
+          paystack_transaction_id: string | null
+          amount_kobo: number
+          currency: string
+          status: "success" | "failed" | "pending" | "refunded"
+          description: string | null
+          metadata: Record<string, unknown> | null
+          paid_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          subscription_id?: string | null
+          paystack_reference: string
+          paystack_transaction_id?: string | null
+          amount_kobo: number
+          currency?: string
+          status: "success" | "failed" | "pending" | "refunded"
+          description?: string | null
+          metadata?: Record<string, unknown> | null
+          paid_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          subscription_id?: string | null
+          paystack_reference?: string
+          paystack_transaction_id?: string | null
+          amount_kobo?: number
+          currency?: string
+          status?: "success" | "failed" | "pending" | "refunded"
+          description?: string | null
+          metadata?: Record<string, unknown> | null
+          paid_at?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_history_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "user_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      api_keys: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          key_hash: string
+          key_prefix: string
+          permissions: string[]
+          rate_limit_per_hour: number
+          calls_today: number
+          calls_total: number
+          last_used_at: string | null
+          expires_at: string | null
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          key_hash: string
+          key_prefix: string
+          permissions?: string[]
+          rate_limit_per_hour?: number
+          calls_today?: number
+          calls_total?: number
+          last_used_at?: string | null
+          expires_at?: string | null
+          is_active?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          key_hash?: string
+          key_prefix?: string
+          permissions?: string[]
+          rate_limit_per_hour?: number
+          calls_today?: number
+          calls_total?: number
+          last_used_at?: string | null
+          expires_at?: string | null
+          is_active?: boolean
+          created_at?: string
+        }
+        Relationships: []
+      }
+      safety_index_data: {
+        Row: {
+          id: string
+          period_month: number | null
+          period_year: number
+          metric_name: string
+          metric_value: number
+          breakdown: Record<string, unknown> | null
+          computed_at: string
+        }
+        Insert: {
+          id?: string
+          period_month?: number | null
+          period_year: number
+          metric_name: string
+          metric_value: number
+          breakdown?: Record<string, unknown> | null
+          computed_at?: string
+        }
+        Update: {
+          id?: string
+          period_month?: number | null
+          period_year?: number
+          metric_name?: string
+          metric_value?: number
+          breakdown?: Record<string, unknown> | null
+          computed_at?: string
+        }
+        Relationships: []
+      }
+      whatsapp_sessions: {
+        Row: {
+          id: string
+          phone_number: string
+          user_id: string | null
+          language: "en" | "pidgin" | "yoruba" | "hausa" | "igbo"
+          last_message_at: string
+          message_count: number
+          monthly_count: number
+          monthly_reset_at: string
+          is_blocked: boolean
+          context: Record<string, unknown>
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          phone_number: string
+          user_id?: string | null
+          language?: "en" | "pidgin" | "yoruba" | "hausa" | "igbo"
+          last_message_at?: string
+          message_count?: number
+          monthly_count?: number
+          monthly_reset_at?: string
+          is_blocked?: boolean
+          context?: Record<string, unknown>
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          phone_number?: string
+          user_id?: string | null
+          language?: "en" | "pidgin" | "yoruba" | "hausa" | "igbo"
+          last_message_at?: string
+          message_count?: number
+          monthly_count?: number
+          monthly_reset_at?: string
+          is_blocked?: boolean
+          context?: Record<string, unknown>
+          created_at?: string
+        }
+        Relationships: []
+      }
+      nafdac_api_audit: {
+        Row: {
+          id: string
+          endpoint: string
+          request_params: Record<string, unknown> | null
+          response_summary: Record<string, unknown> | null
+          records_returned: number | null
+          requested_at: string
+          requester_ip: string | null
+          requester_org: string | null
+        }
+        Insert: {
+          id?: string
+          endpoint: string
+          request_params?: Record<string, unknown> | null
+          response_summary?: Record<string, unknown> | null
+          records_returned?: number | null
+          requested_at?: string
+          requester_ip?: string | null
+          requester_org?: string | null
+        }
+        Update: {
+          id?: string
+          endpoint?: string
+          request_params?: Record<string, unknown> | null
+          response_summary?: Record<string, unknown> | null
+          records_returned?: number | null
+          requested_at?: string
+          requester_ip?: string | null
+          requester_org?: string | null
+        }
+        Relationships: []
+      }
+      audit_log: {
+        Row: {
+          id: string
+          actor_id: string | null
+          action: string
+          target_table: string | null
+          target_id: string | null
+          details: Record<string, unknown> | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          actor_id?: string | null
+          action: string
+          target_table?: string | null
+          target_id?: string | null
+          details?: Record<string, unknown> | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          actor_id?: string | null
+          action?: string
+          target_table?: string | null
+          target_id?: string | null
+          details?: Record<string, unknown> | null
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: {

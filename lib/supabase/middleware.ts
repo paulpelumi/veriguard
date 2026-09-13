@@ -13,7 +13,7 @@ const AUTH_ROUTES = ["/login", "/register"]
 // time despite being built as public pages. /register/manufacturer needs
 // its own auth-route treatment too (see below) since it's nested under
 // /register but is itself a public, pre-login page.
-const PUBLIC_ROUTES = ["/", "/privacy", "/offline", "/report", ...AUTH_ROUTES]
+const PUBLIC_ROUTES = ["/", "/privacy", "/offline", "/report", "/pricing", ...AUTH_ROUTES]
 const PUBLIC_PREFIXES = ["/verify/", "/register/"]
 // /register/manufacturer is deliberately NOT an "auth route" for the
 // redirect-away-if-already-logged-in check below, unlike every other

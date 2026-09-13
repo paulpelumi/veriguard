@@ -15,7 +15,9 @@ import {
   Factory,
   Layers,
   QrCode,
+  CreditCard,
 } from "lucide-react"
+import type { UserRole } from "@/types/database"
 
 export const navIcons = {
   dashboard: LayoutDashboard,
@@ -38,6 +40,7 @@ export const navIcons = {
   alerts: AlertTriangle,
   analytics: Activity,
   serialCodes: QrCode,
+  billing: CreditCard,
 } as const
 
 export type IconName = keyof typeof navIcons
@@ -55,6 +58,7 @@ export const businessNavItems: NavItem[] = [
   { label: "Expiry Alerts", href: "/business/expiry", icon: "expiry" },
   { label: "Recalls", href: "/business/recalls", icon: "recalls" },
   { label: "Reports", href: "/business/reports", icon: "reports" },
+  { label: "Billing", href: "/billing", icon: "billing" },
   { label: "Settings", href: "/business/settings", icon: "settings" },
 ]
 
@@ -63,6 +67,7 @@ export const consumerNavItems: NavItem[] = [
   { label: "Verify Product", href: "/consumer/verify", icon: "verify" },
   { label: "History", href: "/consumer/history", icon: "history" },
   { label: "Report a Product", href: "/consumer/report", icon: "report" },
+  { label: "Billing", href: "/billing", icon: "billing" },
   { label: "Settings", href: "/consumer/settings", icon: "settings" },
 ]
 
@@ -89,5 +94,22 @@ export const manufacturerNavItems: NavItem[] = [
   { label: "Generate Codes", href: "/manufacturer/generate", icon: "generate" },
   { label: "Scan Analytics", href: "/manufacturer/analytics", icon: "analytics" },
   { label: "Duplicate Alerts", href: "/manufacturer/alerts", icon: "alerts" },
+  { label: "Billing", href: "/billing", icon: "billing" },
   { label: "Settings", href: "/manufacturer/settings", icon: "settings" },
 ]
+
+// Phase 5 Module 1 - /billing is a single shared route (not nested under
+// any one role's area), so its layout needs each role's own nav array to
+// render the correct sidebar rather than a fourth hardcoded copy of it.
+// Admin is deliberately absent - platform staff have no subscription of
+// their own to manage.
+export function navItemsForRole(role: UserRole): NavItem[] {
+  switch (role) {
+    case "business":
+      return businessNavItems
+    case "manufacturer":
+      return manufacturerNavItems
+    default:
+      return consumerNavItems
+  }
+}
