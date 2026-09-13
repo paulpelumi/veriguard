@@ -14,10 +14,21 @@ interface SidebarNavProps {
 export function SidebarNav({ items, onNavigate }: SidebarNavProps) {
   const pathname = usePathname()
 
+  // A plain per-item startsWith check marks every nav item active at once
+  // whenever one item's href is a prefix of another's (e.g. "Overview" at
+  // /admin prefix-matches every other /admin/* item, since they're all
+  // nested under it in the URL even though they're siblings, not
+  // children, in the actual nav). Picking only the longest matching href
+  // makes exactly one item active regardless of how much overlap exists.
+  const activeHref = items
+    .map((item) => item.href)
+    .filter((href) => pathname === href || pathname.startsWith(`${href}/`))
+    .sort((a, b) => b.length - a.length)[0]
+
   return (
     <nav className="flex flex-col gap-1 px-3">
       {items.map((item) => {
-        const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
+        const isActive = item.href === activeHref
         const Icon = navIcons[item.icon]
 
         return (
