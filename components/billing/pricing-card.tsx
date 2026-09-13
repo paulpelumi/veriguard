@@ -24,7 +24,7 @@ interface PricingCardProps {
 }
 
 export function PricingCard({ plan, billingCycle, isCurrentPlan, isHighlighted, isAuthenticated }: PricingCardProps) {
-  const { startCheckout, isRedirecting, pendingPlanId } = useSubscriptionCheckout()
+  const { startCheckout, isProcessing, pendingPlanId } = useSubscriptionCheckout()
 
   const priceKobo = billingCycle === "yearly" ? plan.price_yearly_kobo : plan.price_monthly_kobo
   const isFree = priceKobo <= 0
@@ -81,9 +81,9 @@ export function PricingCard({ plan, billingCycle, isCurrentPlan, isHighlighted, 
           <Button
             className="w-full"
             onClick={() => startCheckout({ planId: plan.id, billingCycle })}
-            disabled={isRedirecting}
+            disabled={isProcessing}
           >
-            {isRedirecting && pendingPlanId === plan.id ? "Redirecting…" : "Subscribe"}
+            {isProcessing && pendingPlanId === plan.id ? "Opening checkout…" : "Subscribe"}
           </Button>
         )}
       </CardFooter>

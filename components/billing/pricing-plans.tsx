@@ -57,17 +57,23 @@ export function PricingPlans({ plans, defaultRole, isAuthenticated, lockToRole, 
         </Tabs>
       </div>
 
-      <div className="grid w-full max-w-5xl gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {visiblePlans.map((plan) => (
-          <PricingCard
-            key={plan.id}
-            plan={plan}
-            billingCycle={billingCycle}
-            isCurrentPlan={plan.id === currentPlanId}
-            isHighlighted={plan.id === highlightedPlanId}
-            isAuthenticated={isAuthenticated}
-          />
-        ))}
+      {/* One row regardless of plan count - four cards (the manufacturer
+          tab's worst case) never fit three-per-row without wrapping to a
+          second line, so this scrolls horizontally instead of wrapping. */}
+      <div className="w-full max-w-6xl overflow-x-auto pb-2">
+        <div className="mx-auto flex w-fit gap-6 px-1">
+          {visiblePlans.map((plan) => (
+            <div key={plan.id} className="w-72 shrink-0">
+              <PricingCard
+                plan={plan}
+                billingCycle={billingCycle}
+                isCurrentPlan={plan.id === currentPlanId}
+                isHighlighted={plan.id === highlightedPlanId}
+                isAuthenticated={isAuthenticated}
+              />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )

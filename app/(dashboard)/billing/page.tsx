@@ -6,10 +6,12 @@ import { PaymentHistoryTable } from "@/components/billing/payment-history-table"
 import { UsageMeters } from "@/components/billing/usage-meters"
 import {
   getCurrentSubscription,
+  getImplicitPlan,
   getPaymentHistory,
   getUsageForCurrentPeriod,
 } from "@/lib/payments/subscription-manager"
 import { createClient } from "@/lib/supabase/server"
+import type { UserRole } from "@/types/database"
 
 export const metadata: Metadata = {
   title: "Billing | VeriGuard",
@@ -32,16 +34,11 @@ export default async function BillingPage() {
     getPaymentHistory(supabase, user.id),
   ])
 
-  let fallbackPlan = null
-  if (!subscription && profile?.role && profile.role !== "admin") {
-    const { data } = await supabase
-      .from("subscription_plans")
-      .select("*")
-      .eq("role", profile.role)
-      .eq("tier", profile.role === "manufacturer" ? "pilot" : "free")
-      .maybeSingle()
-    fallbackPlan = data
-  }
+  const billableRole = profile?.role as UserRole | undefined
+  const fallbackPlan =
+    !subscription && billableRole && billableRole !== "admin"
+      ? await getImplicitPlan(supabase, billableRole)
+      : null
 
   const usage = await getUsageForCurrentPeriod(supabase, user.id)
   const limits = (subscription?.plan.limits ?? fallbackPlan?.limits ?? {}) as Record<string, number>

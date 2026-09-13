@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 
-import { generatePaymentReference, initializeTransaction } from "@/lib/payments/paystack"
+import { generatePaymentReference } from "@/lib/payments/paystack"
 import { createClient } from "@/lib/supabase/server"
 
 export async function POST(request: Request) {
@@ -48,27 +48,18 @@ export async function POST(request: Request) {
     )
   }
 
-  const reference = generatePaymentReference()
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://veriguard.ng"
-
-  const result = await initializeTransaction({
-    email: profile.email ?? user.email ?? "",
-    amountKobo,
-    reference,
-    callbackUrl: `${appUrl}/billing/verify`,
-    metadata: { userId: user.id, planId: plan.id, billingCycle },
-  })
-
-  if (!result.status || !result.data) {
-    console.error("[payments/initialize] Paystack rejected the request", result.message)
-    return NextResponse.json(
-      { error: { message: result.message || "Could not start checkout", code: "paystack_error" } },
-      { status: 502 }
-    )
-  }
-
+  // No server-side call to Paystack's own /transaction/initialize here -
+  // checkout runs through Paystack's Inline popup (see
+  // lib/payments/paystack-inline.ts), which opens its own charge directly
+  // from the browser using the public key and this reference. This route's
+  // job is just the trust boundary: compute the authoritative amount from
+  // the DB (never trust a client-supplied amount) and hand back only what
+  // the popup needs.
   return NextResponse.json({
-    authorizationUrl: result.data.authorization_url,
-    reference: result.data.reference,
+    reference: generatePaymentReference(),
+    amountKobo,
+    email: profile.email ?? user.email ?? "",
+    planId: plan.id,
+    billingCycle,
   })
 }

@@ -10,24 +10,6 @@ function getSecretKey(): string {
   return key
 }
 
-interface InitializeTransactionParams {
-  email: string
-  amountKobo: number
-  reference: string
-  callbackUrl: string
-  metadata?: Record<string, unknown>
-}
-
-interface PaystackInitializeResponse {
-  status: boolean
-  message: string
-  data?: {
-    authorization_url: string
-    access_code: string
-    reference: string
-  }
-}
-
 interface PaystackVerifyResponse {
   status: boolean
   message: string
@@ -47,27 +29,6 @@ interface PaystackVerifyResponse {
 // Every Paystack call goes through the same pilot secret key - there's no
 // per-manufacturer merchant split for this pilot, matching the same
 // single-shared-key pattern used for QR signing (crypto-signer.ts).
-export async function initializeTransaction(
-  params: InitializeTransactionParams
-): Promise<PaystackInitializeResponse> {
-  const response = await fetch(`${PAYSTACK_BASE_URL}/transaction/initialize`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${getSecretKey()}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      email: params.email,
-      amount: params.amountKobo,
-      reference: params.reference,
-      callback_url: params.callbackUrl,
-      metadata: params.metadata ?? {},
-    }),
-  })
-
-  return (await response.json()) as PaystackInitializeResponse
-}
-
 export async function verifyTransaction(reference: string): Promise<PaystackVerifyResponse> {
   const response = await fetch(
     `${PAYSTACK_BASE_URL}/transaction/verify/${encodeURIComponent(reference)}`,

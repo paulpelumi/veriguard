@@ -53,6 +53,36 @@ export async function getCurrentSubscription(
   return { ...subscription, plan }
 }
 
+// Consumer and manufacturer both have a real $0 tier seeded in
+// subscription_plans (Consumer Free, Manufacturer Pilot) that a new
+// signup is implicitly on before ever paying. Business has no such tier -
+// every business plan (Starter/Professional/Enterprise) is paid - so a
+// business account with no subscription row genuinely has no plan yet,
+// not a "free" one. Guessing tier 'free' for it (the bug this replaced)
+// silently matched zero rows and made the whole current-plan section
+// vanish instead of showing "not subscribed."
+const IMPLICIT_FREE_TIER: Partial<Record<BillableRole, string>> = {
+  consumer: "free",
+  manufacturer: "pilot",
+}
+
+export async function getImplicitPlan(
+  supabase: TypedClient,
+  role: BillableRole
+): Promise<SubscriptionPlan | null> {
+  const tier = IMPLICIT_FREE_TIER[role]
+  if (!tier) return null
+
+  const { data } = await supabase
+    .from("subscription_plans")
+    .select("*")
+    .eq("role", role)
+    .eq("tier", tier)
+    .maybeSingle()
+
+  return data
+}
+
 // A user's free-tier plan is implicit (no row in user_subscriptions until
 // they've paid at least once), so callers that need "the plan governing
 // this account right now" - not just "do they have a paid subscription" -
@@ -65,14 +95,7 @@ export async function getEffectivePlan(
   const current = await getCurrentSubscription(supabase, userId)
   if (current) return current.plan
 
-  const { data } = await supabase
-    .from("subscription_plans")
-    .select("*")
-    .eq("role", role)
-    .eq("tier", role === "manufacturer" ? "pilot" : "free")
-    .maybeSingle()
-
-  return data
+  return getImplicitPlan(supabase, role)
 }
 
 interface ActivateSubscriptionParams {
