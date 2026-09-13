@@ -16,6 +16,7 @@ import {
   Layers,
   QrCode,
   CreditCard,
+  KeyRound,
 } from "lucide-react"
 import type { UserRole } from "@/types/database"
 
@@ -41,6 +42,7 @@ export const navIcons = {
   analytics: Activity,
   serialCodes: QrCode,
   billing: CreditCard,
+  apiKeys: KeyRound,
 } as const
 
 export type IconName = keyof typeof navIcons
@@ -58,6 +60,7 @@ export const businessNavItems: NavItem[] = [
   { label: "Expiry Alerts", href: "/business/expiry", icon: "expiry" },
   { label: "Recalls", href: "/business/recalls", icon: "recalls" },
   { label: "Reports", href: "/business/reports", icon: "reports" },
+  { label: "API Keys", href: "/business/api-keys", icon: "apiKeys" },
   { label: "Billing", href: "/billing", icon: "billing" },
   { label: "Settings", href: "/business/settings", icon: "settings" },
 ]

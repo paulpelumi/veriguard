@@ -1625,6 +1625,10 @@ export interface Database {
         Args: Record<string, never>
         Returns: undefined
       }
+      api_key_check_rate_limit: {
+        Args: { p_key_id: string; p_limit?: number; p_window_minutes?: number }
+        Returns: boolean
+      }
     }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>

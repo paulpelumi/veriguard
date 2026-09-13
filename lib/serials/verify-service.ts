@@ -23,13 +23,14 @@ type Client = SupabaseClient<Database>
 export async function verifySerial(
   supabase: Client,
   serial: string,
-  location: { state: string | null; lga: string | null } = { state: null, lga: null }
+  location: { state: string | null; lga: string | null } = { state: null, lga: null },
+  source: "web" | "api" = "web"
 ): Promise<SerialVerificationResult> {
   const { data: scanRows, error: scanError } = await supabase.rpc("record_serial_scan", {
     p_serial_code: serial,
     p_location_state: location.state ?? undefined,
     p_location_lga: location.lga ?? undefined,
-    p_scan_source: "web",
+    p_scan_source: source,
   })
 
   if (scanError) {
