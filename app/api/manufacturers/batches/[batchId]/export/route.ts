@@ -15,7 +15,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ error: { message: "Unauthorized", code: "unauthorized" } }, { status: 401 })
   }
 
-  const format = new URL(request.url).searchParams.get("format") as ExportFormat | null
+  const searchParams = new URL(request.url).searchParams
+  const format = searchParams.get("format") as ExportFormat | null
+  const includeQr = searchParams.get("includeQr") !== "false"
+
   if (!format || !EXPORT_FORMATS.includes(format)) {
     return NextResponse.json({ error: { message: "Invalid export format", code: "invalid_request" } }, { status: 400 })
   }
@@ -55,7 +58,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       expiryDate: batch.expiry_date,
       productName: batch.product_name,
     },
-    (serials ?? []).map((s) => ({ serialCode: s.serial_code, qrPayload: s.qr_payload ?? "" }))
+    (serials ?? []).map((s) => ({ serialCode: s.serial_code, qrPayload: s.qr_payload ?? "" })),
+    includeQr
   )
 
   await supabase

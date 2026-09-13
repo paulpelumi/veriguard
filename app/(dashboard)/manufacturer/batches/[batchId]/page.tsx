@@ -1,11 +1,9 @@
 import { notFound } from "next/navigation"
-import { Download } from "lucide-react"
 
+import { ExportOptions } from "@/components/manufacturer/export/export-options"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { EXPORT_FORMAT_LABELS, EXPORT_FORMATS, type ExportFormat } from "@/lib/manufacturers/machine-types"
-import { IMPLEMENTED_EXPORT_FORMATS } from "@/lib/manufacturers/export-engine"
+import type { ExportFormat } from "@/lib/manufacturers/machine-types"
 import { createClient } from "@/lib/supabase/server"
 import { formatDate } from "@/lib/utils/date"
 
@@ -62,48 +60,13 @@ export default async function BatchDetailPage({ params }: { params: Promise<{ ba
         <CardHeader>
           <CardTitle className="text-base">Export Serial Codes</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          {recommendedFormat && IMPLEMENTED_EXPORT_FORMATS.includes(recommendedFormat) && (
-            <div className="flex flex-col gap-2">
-              <p className="text-sm font-medium text-foreground">⭐ Recommended for your machine</p>
-              <Button
-                nativeButton={false}
-                render={<a href={`/api/manufacturers/batches/${batch.id}/export?format=${recommendedFormat}`} />}
-              >
-                <Download className="size-4" />
-                Download {EXPORT_FORMAT_LABELS[recommendedFormat]}
-              </Button>
-            </div>
-          )}
-
-          <div className="flex flex-col gap-2">
-            <p className="text-sm font-medium text-foreground">All formats</p>
-            <div className="flex flex-wrap gap-2">
-              {EXPORT_FORMATS.map((format) => {
-                const isImplemented = IMPLEMENTED_EXPORT_FORMATS.includes(format)
-                return (
-                  <Button
-                    key={format}
-                    variant="outline"
-                    size="sm"
-                    nativeButton={!isImplemented}
-                    disabled={!isImplemented}
-                    render={isImplemented ? <a href={`/api/manufacturers/batches/${batch.id}/export?format=${format}`} /> : undefined}
-                    title={isImplemented ? undefined : "Coming soon"}
-                  >
-                    {EXPORT_FORMAT_LABELS[format]}
-                  </Button>
-                )
-              })}
-            </div>
-          </div>
-
-          {batch.last_exported_at && (
-            <p className="text-sm text-muted-foreground">
-              Last exported {formatDate(batch.last_exported_at)} · {batch.export_count} time
-              {batch.export_count === 1 ? "" : "s"}
-            </p>
-          )}
+        <CardContent>
+          <ExportOptions
+            batchId={batch.id}
+            recommendedFormat={recommendedFormat}
+            lastExportedAt={batch.last_exported_at}
+            exportCount={batch.export_count}
+          />
         </CardContent>
       </Card>
     </div>

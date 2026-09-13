@@ -33,6 +33,11 @@ export const IMPLEMENTED_EXPORT_FORMATS: ExportFormat[] = [
   "XML_SATO",
 ]
 
+// The formats where whether a QR actually gets printed depends on the
+// specific machine/software, not the format itself - ZPL/XML always draw
+// a QR (that's the whole format), TXT_SEQUENTIAL is defined as serial-only.
+export const FORMATS_WITH_QR_TOGGLE: ExportFormat[] = ["CSV_VIDEOJET", "CSV_DOMINO", "CSV_MARKEM", "CSV_GENERIC"]
+
 function csvField(value: string): string {
   return `"${value.replace(/"/g, '""')}"`
 }
@@ -45,33 +50,72 @@ function toDdMmYyyy(isoDate: string): string {
 export function generateExport(
   format: ExportFormat,
   batch: ExportBatchInfo,
-  serials: ExportSerialRow[]
+  serials: ExportSerialRow[],
+  includeQrData = true
 ): ExportResult {
   switch (format) {
+    // CSV_VIDEOJET is the one CSV format the spec itself always paired
+    // with a QR column - dropping it (includeQrData: false) still leaves
+    // a valid Videojet-shaped file for a machine/job template with no 2D
+    // barcode field configured.
     case "CSV_VIDEOJET": {
-      const header = "Serial,QRData,BatchNo,ExpiryDate,ProductName"
+      const header = includeQrData ? "Serial,QRData,BatchNo,ExpiryDate,ProductName" : "Serial,BatchNo,ExpiryDate,ProductName"
       const rows = serials.map((s) =>
-        [csvField(s.serialCode), csvField(s.qrPayload), csvField(batch.batchNumber), csvField(batch.expiryDate), csvField(batch.productName)].join(",")
+        [
+          csvField(s.serialCode),
+          ...(includeQrData ? [csvField(s.qrPayload)] : []),
+          csvField(batch.batchNumber),
+          csvField(batch.expiryDate),
+          csvField(batch.productName),
+        ].join(",")
       )
       return { content: [header, ...rows].join("\n"), mimeType: "text/csv", fileExtension: "csv" }
     }
+    // Domino/Markem/Generic's base columns (DATA1-4 / the plain fields)
+    // never carried QR data in the original spec - includeQrData appends
+    // it as a trailing field instead of restructuring the base columns,
+    // so an operator's existing DATA1-4 mapping in their job software
+    // doesn't shift when they turn this on.
     case "CSV_DOMINO": {
-      const header = "INDEX,DATA1,DATA2,DATA3,DATA4"
+      const header = includeQrData ? "INDEX,DATA1,DATA2,DATA3,DATA4,DATA5" : "INDEX,DATA1,DATA2,DATA3,DATA4"
       const rows = serials.map((s, i) =>
-        [i + 1, s.serialCode, batch.batchNumber, toDdMmYyyy(batch.productionDate), toDdMmYyyy(batch.expiryDate)].join(",")
+        [
+          i + 1,
+          s.serialCode,
+          batch.batchNumber,
+          toDdMmYyyy(batch.productionDate),
+          toDdMmYyyy(batch.expiryDate),
+          ...(includeQrData ? [s.qrPayload] : []),
+        ].join(",")
       )
       return { content: [header, ...rows].join("\n"), mimeType: "text/csv", fileExtension: "csv" }
     }
     case "CSV_MARKEM": {
       const rows = serials.map((s) =>
-        [s.serialCode, batch.batchNumber, toDdMmYyyy(batch.productionDate), toDdMmYyyy(batch.expiryDate), batch.productName].join("\t")
+        [
+          s.serialCode,
+          batch.batchNumber,
+          toDdMmYyyy(batch.productionDate),
+          toDdMmYyyy(batch.expiryDate),
+          batch.productName,
+          ...(includeQrData ? [s.qrPayload] : []),
+        ].join("\t")
       )
       return { content: rows.join("\n"), mimeType: "text/tab-separated-values", fileExtension: "csv" }
     }
     case "CSV_GENERIC": {
-      const header = "Serial,Batch,ProductionDate,ExpiryDate,ProductName"
+      const header = includeQrData
+        ? "Serial,Batch,ProductionDate,ExpiryDate,ProductName,QRData"
+        : "Serial,Batch,ProductionDate,ExpiryDate,ProductName"
       const rows = serials.map((s) =>
-        [csvField(s.serialCode), csvField(batch.batchNumber), csvField(batch.productionDate), csvField(batch.expiryDate), csvField(batch.productName)].join(",")
+        [
+          csvField(s.serialCode),
+          csvField(batch.batchNumber),
+          csvField(batch.productionDate),
+          csvField(batch.expiryDate),
+          csvField(batch.productName),
+          ...(includeQrData ? [csvField(s.qrPayload)] : []),
+        ].join(",")
       )
       return { content: [header, ...rows].join("\n"), mimeType: "text/csv", fileExtension: "csv" }
     }
