@@ -86,6 +86,55 @@ export async function getAdminOverviewStats(supabase: SupabaseServerClient): Pro
   }
 }
 
+export interface AdminSerialisationStats {
+  totalSerialCodesGenerated: number
+  totalScans: number
+  totalDuplicates: number
+  manufacturersApproved: number
+  manufacturersPending: number
+  manufacturersRejected: number
+}
+
+// "Pending" is derived as the remainder (total - approved - rejected)
+// rather than filtered directly - verification_status has more values
+// than that 3-bucket split (pending/auto_checking/pending_manual all
+// count as "still in progress" here), and deriving it avoids depending
+// on every one of those staying in sync with this list.
+export async function getAdminSerialisationStats(
+  supabase: SupabaseServerClient
+): Promise<AdminSerialisationStats> {
+  const [
+    { count: totalSerialCodesGenerated },
+    { count: totalScans },
+    { count: totalDuplicates },
+    { count: totalManufacturers },
+    { count: manufacturersApproved },
+    { count: manufacturersRejected },
+  ] = await Promise.all([
+    supabase.from("product_serials").select("id", { count: "exact", head: true }),
+    supabase.from("serial_scan_events").select("id", { count: "exact", head: true }),
+    supabase.from("product_serials").select("id", { count: "exact", head: true }).eq("is_flagged", true),
+    supabase.from("manufacturer_profiles").select("id", { count: "exact", head: true }),
+    supabase
+      .from("manufacturer_profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("verification_status", "approved"),
+    supabase
+      .from("manufacturer_profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("verification_status", "rejected"),
+  ])
+
+  return {
+    totalSerialCodesGenerated: totalSerialCodesGenerated ?? 0,
+    totalScans: totalScans ?? 0,
+    totalDuplicates: totalDuplicates ?? 0,
+    manufacturersApproved: manufacturersApproved ?? 0,
+    manufacturersPending: Math.max(0, (totalManufacturers ?? 0) - (manufacturersApproved ?? 0) - (manufacturersRejected ?? 0)),
+    manufacturersRejected: manufacturersRejected ?? 0,
+  }
+}
+
 // Raw per-verification events are deliberately excluded here - at any real
 // volume they'd be the overwhelming majority of "last 20 events" and drown
 // out everything else the admin actually wants to notice. This feed is

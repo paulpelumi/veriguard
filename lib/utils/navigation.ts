@@ -37,6 +37,7 @@ export const navIcons = {
   generate: QrCode,
   alerts: AlertTriangle,
   analytics: Activity,
+  serialCodes: QrCode,
 } as const
 
 export type IconName = keyof typeof navIcons
@@ -69,6 +70,8 @@ export const adminNavItems: NavItem[] = [
   { label: "Overview", href: "/admin", icon: "dashboard" },
   { label: "Users", href: "/admin/users", icon: "users" },
   { label: "Manufacturers", href: "/admin/manufacturers", icon: "manufacturers" },
+  { label: "Serial Codes", href: "/admin/serial-codes", icon: "serialCodes" },
+  { label: "Duplicate Alerts", href: "/admin/duplicates", icon: "alerts" },
   { label: "Counterfeit Reports", href: "/admin/reports", icon: "reports" },
   { label: "Recall Management", href: "/admin/recalls", icon: "recalls" },
   { label: "Anomalies", href: "/admin/anomalies", icon: "anomalies" },

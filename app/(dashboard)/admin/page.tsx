@@ -1,17 +1,22 @@
 import Link from "next/link"
-import { AlertTriangle, Activity, Flag, Package, ShieldCheck, Users } from "lucide-react"
+import { AlertTriangle, Activity, Copy, Factory, Flag, Package, QrCode, ScanLine, ShieldCheck, Users } from "lucide-react"
 
 import { ActivityFeed } from "@/components/admin/activity-feed"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StatCard } from "@/components/shared/stat-card"
-import { getAdminOverviewStats, getRecentActivity } from "@/lib/admin/get-overview-data"
+import {
+  getAdminOverviewStats,
+  getAdminSerialisationStats,
+  getRecentActivity,
+} from "@/lib/admin/get-overview-data"
 import { createClient } from "@/lib/supabase/server"
 
 export default async function AdminOverviewPage() {
   const supabase = await createClient()
-  const [stats, activity] = await Promise.all([
+  const [stats, serialisationStats, activity] = await Promise.all([
     getAdminOverviewStats(supabase),
+    getAdminSerialisationStats(supabase),
     getRecentActivity(supabase),
   ])
 
@@ -49,6 +54,25 @@ export default async function AdminOverviewPage() {
         />
       </div>
 
+      <div>
+        <h2 className="text-lg font-semibold text-foreground">Serialisation</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Manufacturer portal activity platform-wide.</p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <StatCard label="Serial Codes Generated" value={serialisationStats.totalSerialCodesGenerated} icon={QrCode} />
+        <StatCard label="Total Scans" value={serialisationStats.totalScans} icon={ScanLine} />
+        <StatCard
+          label="Flagged Duplicates"
+          value={serialisationStats.totalDuplicates}
+          icon={Copy}
+          tone={serialisationStats.totalDuplicates > 0 ? "destructive" : "default"}
+        />
+        <StatCard label="Approved Manufacturers" value={serialisationStats.manufacturersApproved} icon={Factory} tone="success" />
+        <StatCard label="Pending Manufacturers" value={serialisationStats.manufacturersPending} icon={Factory} tone="warning" />
+        <StatCard label="Rejected Manufacturers" value={serialisationStats.manufacturersRejected} icon={Factory} />
+      </div>
+
       <div className="flex flex-wrap gap-2">
         <Button nativeButton={false} render={<Link href="/admin/reports" />}>
           Review Reports
@@ -58,6 +82,12 @@ export default async function AdminOverviewPage() {
         </Button>
         <Button variant="outline" nativeButton={false} render={<Link href="/admin/anomalies" />}>
           View Anomalies
+        </Button>
+        <Button variant="outline" nativeButton={false} render={<Link href="/admin/serial-codes" />}>
+          Serial Codes
+        </Button>
+        <Button variant="outline" nativeButton={false} render={<Link href="/admin/duplicates" />}>
+          Duplicate Alerts
         </Button>
       </div>
 

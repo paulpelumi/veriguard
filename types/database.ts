@@ -280,6 +280,7 @@ export interface Database {
           suspicion_reason: string
           description: string | null
           status: ReportStatus
+          serial_code: string | null
           created_at: string
         }
         Insert: {
@@ -295,6 +296,7 @@ export interface Database {
           suspicion_reason: string
           description?: string | null
           status?: ReportStatus
+          serial_code?: string | null
           created_at?: string
         }
         Update: {
@@ -310,6 +312,7 @@ export interface Database {
           suspicion_reason?: string
           description?: string | null
           status?: ReportStatus
+          serial_code?: string | null
           created_at?: string
         }
         Relationships: [
