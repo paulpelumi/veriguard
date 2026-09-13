@@ -73,4 +73,25 @@ export interface WhatsAppSendInteractivePayload {
   }
 }
 
-export type WhatsAppSendPayload = WhatsAppSendTextPayload | WhatsAppSendInteractivePayload
+// Meta only allows sending a template message (never plain text/interactive)
+// to a user outside an active 24-hour customer-service conversation - the
+// only send path that applies to a proactive recall alert, since nobody
+// just messaged the bot moments before their product got recalled. The
+// template itself (name + body variable count/order) must already be
+// approved in Meta Business Manager; see .env.local.example for the exact
+// body text to submit.
+export interface WhatsAppSendTemplatePayload {
+  messaging_product: "whatsapp"
+  to: string
+  type: "template"
+  template: {
+    name: string
+    language: { code: string }
+    components: [{ type: "body"; parameters: { type: "text"; text: string }[] }]
+  }
+}
+
+export type WhatsAppSendPayload =
+  | WhatsAppSendTextPayload
+  | WhatsAppSendInteractivePayload
+  | WhatsAppSendTemplatePayload

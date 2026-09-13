@@ -1,7 +1,9 @@
-import { NextResponse, type NextRequest } from "next/server"
+import { after, NextResponse, type NextRequest } from "next/server"
 
 import { createClient } from "@/lib/supabase/server"
 import { requireAdminApi as requireAdmin } from "@/lib/supabase/require-admin-api"
+import { createServiceRoleClient } from "@/lib/supabase/service-role"
+import { notifyWhatsAppUsersOfRecall } from "@/lib/whatsapp/recall-notifier"
 import type { Database, RecallSeverity } from "@/types/database"
 
 type RecallAlertUpdate = Database["public"]["Tables"]["recall_alerts"]["Update"]
@@ -84,6 +86,21 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
+
+  // after() (not a bare fire-and-forget promise) because Vercel's
+  // serverless runtime can freeze/terminate a function the moment its
+  // response is sent - a detached promise here could get cut off mid-send
+  // before any WhatsApp message actually goes out. after() keeps the
+  // function alive until this resolves while still returning the response
+  // to the admin immediately, so recall creation itself never waits on a
+  // stalled or failed WhatsApp push (most likely an unapproved/
+  // misconfigured template - see recall-notifier.ts's own comment).
+  after(() =>
+    notifyWhatsAppUsersOfRecall(createServiceRoleClient(), data).catch((notifyError) => {
+      console.error("[admin/recalls] WhatsApp recall notification failed", notifyError)
+    })
+  )
+
   return NextResponse.json({ recall: data }, { status: 201 })
 }
 

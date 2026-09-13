@@ -61,6 +61,27 @@ export async function sendWhatsAppButtons(
   })
 }
 
+// See WhatsAppSendTemplatePayload's own comment - the only send path Meta
+// allows outside an active 24-hour conversation, used exclusively by
+// lib/whatsapp/recall-notifier.ts today.
+export async function sendWhatsAppTemplate(
+  to: string,
+  templateName: string,
+  languageCode: string,
+  bodyParams: string[]
+): Promise<void> {
+  await sendPayload({
+    messaging_product: "whatsapp",
+    to,
+    type: "template",
+    template: {
+      name: templateName,
+      language: { code: languageCode },
+      components: [{ type: "body", parameters: bodyParams.map((text) => ({ type: "text", text })) }],
+    },
+  })
+}
+
 // --- Message templates -----------------------------------------------
 
 export function formatWelcomeMessage(): string {
@@ -73,8 +94,29 @@ export function formatWelcomeMessage(): string {
     "3️⃣ Type RECALLS to see current NAFDAC recalls\n" +
     "4️⃣ Type REPORT to report a suspicious product\n" +
     "5️⃣ Type REGISTER to create a VeriGuard account\n\n" +
+    "🌍 Type LANGUAGE to chat in Pidgin, Yoruba, Hausa, or Igbo\n\n" +
     "Powered by VeriGuard.ng 🇳🇬"
   )
+}
+
+export function formatLanguagePickerMessage(): string {
+  return (
+    "🌍 *Choose your language*\n\n" +
+    "1️⃣ English\n" +
+    "2️⃣ Pidgin\n" +
+    "3️⃣ Yoruba\n" +
+    "4️⃣ Hausa\n" +
+    "5️⃣ Igbo\n\n" +
+    "Reply with a number (1-5)."
+  )
+}
+
+export function formatLanguageConfirmedMessage(): string {
+  return "✅ Got it - I'll reply in this language from now on. Type LANGUAGE anytime to change it again."
+}
+
+export function formatLanguagePickerRetryMessage(): string {
+  return `Sorry, I didn't get that.\n\n${formatLanguagePickerMessage()}`
 }
 
 export function formatUnrecognizedMessage(): string {

@@ -63,6 +63,11 @@ export interface VerifyNafdacNumberInput {
   userId: string | null
   location?: { state: string | null; lga: string | null }
   source?: LogSource
+  // Phase 5 Module 4: the WhatsApp sender's number, independent of whether
+  // it matched a profile (userId above) - the only way to look this
+  // verification's sender back up later for a proactive recall alert (see
+  // lib/whatsapp/recall-notifier.ts). Always undefined for web/API callers.
+  phoneNumber?: string
 }
 
 async function logVerification(
@@ -82,6 +87,7 @@ async function logVerification(
     source: input.source ?? "web",
     user_state: input.location?.state ?? null,
     user_lga: input.location?.lga ?? null,
+    phone_number: input.phoneNumber ?? null,
   })
 }
 

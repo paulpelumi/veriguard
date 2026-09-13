@@ -226,6 +226,9 @@ export interface Database {
           source: LogSource
           user_state: string | null
           user_lga: string | null
+          // Phase 5 Module 4: populated only for source='whatsapp' rows,
+          // going forward - see migration 0024's own comment.
+          phone_number: string | null
           created_at: string
         }
         Insert: {
@@ -240,6 +243,7 @@ export interface Database {
           source?: LogSource
           user_state?: string | null
           user_lga?: string | null
+          phone_number?: string | null
           created_at?: string
         }
         Update: {
@@ -254,6 +258,7 @@ export interface Database {
           source?: LogSource
           user_state?: string | null
           user_lga?: string | null
+          phone_number?: string | null
           created_at?: string
         }
         Relationships: [
@@ -1468,6 +1473,32 @@ export interface Database {
           created_at?: string
         }
         Relationships: []
+      }
+      whatsapp_recall_notifications: {
+        Row: {
+          recall_id: string
+          phone_number: string
+          sent_at: string
+        }
+        Insert: {
+          recall_id: string
+          phone_number: string
+          sent_at?: string
+        }
+        Update: {
+          recall_id?: string
+          phone_number?: string
+          sent_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_recall_notifications_recall_id_fkey"
+            columns: ["recall_id"]
+            isOneToOne: false
+            referencedRelation: "recall_alerts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       nafdac_api_audit: {
         Row: {
