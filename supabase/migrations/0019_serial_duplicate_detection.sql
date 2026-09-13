@@ -21,10 +21,16 @@
 -- no-op for the entire public-facing scan flow. A public key is public
 -- by definition - nothing here exposes VERIGUARD_PILOT_PRIVATE_KEY,
 -- which never touches the database at all.
+drop policy if exists "Public keys are publicly readable" on public.manufacturer_keys;
 create policy "Public keys are publicly readable"
   on public.manufacturer_keys for select using (true);
 
-create or replace function public.record_serial_scan(
+-- CREATE OR REPLACE can't change a function's return columns (only its
+-- body) - the new columns below (first_scanned_location, is_duplicate,
+-- etc.) require dropping the old signature first.
+drop function if exists public.record_serial_scan(text, text, text, text);
+
+create function public.record_serial_scan(
   p_serial_code text,
   p_location_state text default null,
   p_location_lga text default null,
