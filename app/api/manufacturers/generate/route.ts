@@ -4,6 +4,7 @@ import { buildQrPayload, deriveManufacturerCode, formatSerialCode } from "@/lib/
 import { getPilotPublicKey, signQrPayload } from "@/lib/manufacturers/crypto-signer"
 import { createClient } from "@/lib/supabase/server"
 import { createServiceRoleClient } from "@/lib/supabase/service-role"
+import { recordUsage } from "@/lib/usage/usage-tracker"
 import type { SerialisationLevel } from "@/types/database"
 
 // Runs synchronously in one request - fine at pilot scale, but each serial
@@ -200,6 +201,12 @@ export async function POST(request: Request) {
   await serviceClient
     .from("manufacturer_keys")
     .upsert({ manufacturer_id: user.id, public_key: getPilotPublicKey() }, { onConflict: "manufacturer_id" })
+
+  // manufacturer_profiles.units_generated_this_month above (Phase 4) stays
+  // the actual gate a few lines up - this is purely so usage_records has
+  // real numbers for the Billing page's usage meter, which reads from the
+  // Phase 5 schema rather than this manufacturer-specific column.
+  await recordUsage(serviceClient, user.id, "serial_codes_generated", quantity)
 
   return NextResponse.json({ batchId: batch.id, generated: quantity })
 }

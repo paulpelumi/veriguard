@@ -84,14 +84,29 @@ export interface BarcodeResolutionResult {
 // but it doesn't match the shape callers expect - reading it as if it were
 // a normal result silently produces garbage (e.g. an undefined .message).
 // This surfaces the real error as a thrown Error instead.
+//
+// Carries the API's error `code` (e.g. "limit_reached") alongside the
+// message, not just the message alone - callers that need to react
+// differently to a usage-limit block (show an "Upgrade" action instead of
+// a plain error toast) would otherwise have to pattern-match on message
+// text, which breaks the moment the wording changes.
+export class ApiError extends Error {
+  code?: string
+
+  constructor(message: string, code?: string) {
+    super(message)
+    this.code = code
+  }
+}
+
 async function parseOrThrow<T>(response: Response): Promise<T> {
   const data = await response.json().catch(() => null)
   if (!response.ok) {
-    const message =
+    const apiError =
       data && typeof data === "object" && "error" in data
-        ? ((data as { error?: { message?: string } }).error?.message ?? `Request failed (${response.status})`)
-        : `Request failed (${response.status})`
-    throw new Error(message)
+        ? (data as { error?: { message?: string; code?: string } }).error
+        : undefined
+    throw new ApiError(apiError?.message ?? `Request failed (${response.status})`, apiError?.code)
   }
   return data as T
 }

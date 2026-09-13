@@ -12,8 +12,10 @@ import {
 import { InventoryStats } from "@/components/inventory/inventory-stats"
 import { InventoryTable } from "@/components/inventory/inventory-table"
 import { EmptyState } from "@/components/shared/empty-state"
+import { UpgradePromptBanner } from "@/components/shared/upgrade-prompt-banner"
 import { Button } from "@/components/ui/button"
 import { useInventory } from "@/hooks/use-inventory"
+import { usePlanLimits } from "@/hooks/use-plan-limits"
 import { createClient } from "@/lib/supabase/client"
 import { daysUntil } from "@/lib/utils/date"
 import type { InventoryFormValues } from "@/lib/validations/inventory"
@@ -57,6 +59,8 @@ export default function InventoryPage() {
 
   const { items, isLoading, error, addItem, updateItem, deleteItem, verifyItem } =
     useInventory(businessId)
+  const limits = usePlanLimits(businessId, "business")
+  const inventoryLimit = limits?.inventory_items ?? -1
 
   const filteredItems = useMemo(() => {
     const search = filters.search.trim().toLowerCase()
@@ -121,6 +125,8 @@ export default function InventoryPage() {
           Add Product
         </Button>
       </div>
+
+      <UpgradePromptBanner used={items.length} limit={inventoryLimit} label="products" />
 
       <InventoryStats items={items} />
 

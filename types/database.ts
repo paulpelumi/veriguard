@@ -1617,6 +1617,14 @@ export interface Database {
         Args: { p_phone_number: string; p_limit?: number; p_window_minutes?: number }
         Returns: boolean
       }
+      record_usage: {
+        Args: { p_user_id: string; p_metric: string; p_count?: number }
+        Returns: undefined
+      }
+      reset_monthly_usage_counters: {
+        Args: Record<string, never>
+        Returns: undefined
+      }
     }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>

@@ -12,12 +12,12 @@ type SubscriptionPlan = Database["public"]["Tables"]["subscription_plans"]["Row"
 
 interface CurrentPlanCardProps {
   subscription: SubscriptionWithPlan | null
-  // Falls back to this when there's no paid subscription row yet - only
-  // consumer and manufacturer have an implicit $0 plan from signup
-  // (Consumer Free, Manufacturer Pilot). Business has no free tier at all,
-  // so this is genuinely null for a business account that hasn't paid yet -
-  // that's a real "not subscribed" state, not a loading gap, so it gets
-  // its own card below rather than silently rendering nothing.
+  // Falls back to this when there's no paid subscription row yet - every
+  // role has an implicit $0 plan from signup (Consumer Free, Business
+  // Free, Manufacturer Pilot - see migration 0022). Both can still be
+  // null in principle (e.g. an admin, who has no billable plan at all),
+  // so the "not subscribed" branch below stays as a defensive fallback
+  // rather than the expected path.
   fallbackPlan: SubscriptionPlan | null
 }
 

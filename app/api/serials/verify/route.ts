@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server"
 
 import { verifySerial } from "@/lib/serials/verify-service"
 import { createClient } from "@/lib/supabase/server"
+import { checkUsageLimit, recordUsage } from "@/lib/usage/usage-tracker"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -28,15 +29,39 @@ export async function POST(request: NextRequest) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("state, lga")
+    .select("state, lga, role")
     .eq("id", user.id)
     .maybeSingle()
+
+  // Shares the same "verifications" quota as NAFDAC-number checks - both
+  // are the same underlying action from a plan's perspective (a consumer
+  // checking whether a product is genuine), so they draw from one pool
+  // rather than each getting their own separate allowance.
+  if (profile?.role && profile.role !== "admin") {
+    const usage = await checkUsageLimit(supabase, user.id, profile.role, "verifications")
+    if (!usage.allowed) {
+      return NextResponse.json(
+        {
+          error: {
+            message: `You've used all ${usage.limit} free verifications this month. Upgrade to keep verifying.`,
+            code: "limit_reached",
+          },
+        },
+        { status: 403 }
+      )
+    }
+  }
 
   try {
     const result = await verifySerial(supabase, serial, {
       state: profile?.state ?? null,
       lga: profile?.lga ?? null,
     })
+
+    if (profile?.role && profile.role !== "admin") {
+      await recordUsage(supabase, user.id, "verifications")
+    }
+
     return NextResponse.json(result)
   } catch (error) {
     return NextResponse.json(

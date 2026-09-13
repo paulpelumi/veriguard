@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
@@ -39,6 +40,7 @@ function toInventoryRow(values: InventoryFormValues) {
 export function useInventory(businessId: string | null) {
   const supabase = useMemo(() => createClient(), [])
   const queryClient = useQueryClient()
+  const router = useRouter()
   const queryKey = inventoryKey(businessId)
 
   const {
@@ -140,6 +142,17 @@ export function useInventory(businessId: string | null) {
     },
     onError: (mutationError, _values, context) => {
       if (context) queryClient.setQueryData(queryKey, context.previous)
+
+      // Raised by the enforce_inventory_limit trigger (migration 0022) -
+      // the insert never happened, so this is the one addMutation error
+      // that should point at /pricing instead of just naming the failure.
+      if (mutationError.message.includes("Inventory limit reached")) {
+        toast.error(mutationError.message, {
+          action: { label: "Upgrade", onClick: () => router.push("/pricing") },
+        })
+        return
+      }
+
       toast.error(mutationError.message)
     },
     onSuccess: (data, _values, context) => {

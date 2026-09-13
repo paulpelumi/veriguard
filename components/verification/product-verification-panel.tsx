@@ -19,7 +19,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { UpgradePromptBanner } from "@/components/shared/upgrade-prompt-banner"
 import {
+  ApiError,
   detectScanFormat,
   parseScanUrl,
   resolveEanBarcode,
@@ -36,11 +38,17 @@ const RECENT_LIMIT = 5
 interface ProductVerificationPanelProps {
   reportPath: string
   initialNumber?: string
+  // Only meaningful for a plan with a real monthly_verifications ceiling
+  // (Consumer Free) - business plans are all unlimited on this metric, so
+  // callers on that side (business/verification/page.tsx) just omit it and
+  // the banner never renders.
+  usageSummary?: { used: number; limit: number }
 }
 
 export function ProductVerificationPanel({
   reportPath,
   initialNumber,
+  usageSummary,
 }: ProductVerificationPanelProps) {
   const router = useRouter()
   const [value, setValue] = useState(initialNumber ?? "")
@@ -105,14 +113,20 @@ export function ProductVerificationPanel({
       setResult(data)
       fetchRecent()
     } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Couldn't reach the verification service. Check your connection and try again."
-      )
+      showVerifyError(error)
     } finally {
       setIsVerifying(false)
     }
+  }
+
+  function showVerifyError(error: unknown, fallbackMessage = "Couldn't reach the verification service. Check your connection and try again.") {
+    if (error instanceof ApiError && error.code === "limit_reached") {
+      toast.error(error.message, {
+        action: { label: "Upgrade", onClick: () => router.push("/pricing") },
+      })
+      return
+    }
+    toast.error(error instanceof Error ? error.message : fallbackMessage)
   }
 
   function handleTryDifferent() {
@@ -150,7 +164,7 @@ export function ProductVerificationPanel({
         const data = await resolveVeriGuardSerial(scannedValue)
         setSerialResult(data)
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Couldn't check this VeriGuard serial.")
+        showVerifyError(error, "Couldn't check this VeriGuard serial.")
       } finally {
         setIsVerifying(false)
       }
@@ -219,6 +233,14 @@ export function ProductVerificationPanel({
 
   return (
     <div className="flex flex-col gap-6">
+      {usageSummary && (
+        <UpgradePromptBanner
+          used={usageSummary.used}
+          limit={usageSummary.limit}
+          label="verifications this month"
+        />
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Verify a Product</CardTitle>

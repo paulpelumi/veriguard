@@ -53,16 +53,15 @@ export async function getCurrentSubscription(
   return { ...subscription, plan }
 }
 
-// Consumer and manufacturer both have a real $0 tier seeded in
-// subscription_plans (Consumer Free, Manufacturer Pilot) that a new
-// signup is implicitly on before ever paying. Business has no such tier -
-// every business plan (Starter/Professional/Enterprise) is paid - so a
-// business account with no subscription row genuinely has no plan yet,
-// not a "free" one. Guessing tier 'free' for it (the bug this replaced)
-// silently matched zero rows and made the whole current-plan section
-// vanish instead of showing "not subscribed."
+// Every role has a real $0 tier seeded in subscription_plans (Consumer
+// Free, Business Free, Manufacturer Pilot) that a new signup is implicitly
+// on before ever paying. Business's free tier was added later (Module 2,
+// migration 0022) specifically so this map could stay uniform instead of
+// business being a permanent null-plan special case - see that
+// migration's own comment.
 const IMPLICIT_FREE_TIER: Partial<Record<BillableRole, string>> = {
   consumer: "free",
+  business: "free",
   manufacturer: "pilot",
 }
 
