@@ -13,7 +13,7 @@ const AUTH_ROUTES = ["/login", "/register"]
 // time despite being built as public pages. /register/manufacturer needs
 // its own auth-route treatment too (see below) since it's nested under
 // /register but is itself a public, pre-login page.
-const PUBLIC_ROUTES = ["/", "/privacy", "/offline", ...AUTH_ROUTES]
+const PUBLIC_ROUTES = ["/", "/privacy", "/offline", "/report", ...AUTH_ROUTES]
 const PUBLIC_PREFIXES = ["/verify/", "/register/"]
 
 export async function updateSession(request: NextRequest) {

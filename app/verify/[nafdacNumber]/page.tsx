@@ -90,6 +90,16 @@ export default async function PublicVerifyPage({ params }: PublicVerifyPageProps
                   </p>
                 </div>
               )}
+              {isConfirmedCounterfeit && (
+                <Button
+                  variant="outline"
+                  className="w-fit"
+                  nativeButton={false}
+                  render={<Link href={`/report?nafdacNumber=${encodeURIComponent(nafdacNumber)}`} />}
+                >
+                  Report this product
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (
@@ -103,6 +113,14 @@ export default async function PublicVerifyPage({ params }: PublicVerifyPageProps
                 NAFDAC number <span className="font-medium">{nafdacNumber}</span> hasn&apos;t been
                 checked on VeriGuard yet, so we don&apos;t have a result to show here.
               </p>
+              <Button
+                variant="outline"
+                className="w-fit"
+                nativeButton={false}
+                render={<Link href={`/report?nafdacNumber=${encodeURIComponent(nafdacNumber)}`} />}
+              >
+                Report this product
+              </Button>
             </CardContent>
           </Card>
         )}

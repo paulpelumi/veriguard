@@ -42,6 +42,22 @@ export default async function PublicSerialVerifyPage({ params }: PublicSerialVer
           </p>
         )}
 
+        {/* Duplicate/flagged scans already auto-generate a report (Module 5) -
+            this manual CTA only appears where nothing was created automatically. */}
+        {result && (result.status === "not_found" || result.status === "tampered") && (
+          <Button
+            variant="outline"
+            nativeButton={false}
+            render={
+              <Link
+                href={`/report?nafdacNumber=${encodeURIComponent(result.product?.nafdac_number ?? "")}&productName=${encodeURIComponent(result.product?.name ?? "")}`}
+              />
+            }
+          >
+            Report this product
+          </Button>
+        )}
+
         <div className="flex flex-col items-center gap-3 text-center">
           <p className="text-sm text-muted-foreground">
             Verify NAFDAC-registered products, track expiry dates, and stay ahead of recalls.

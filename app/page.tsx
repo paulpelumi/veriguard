@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card"
 import { Logo } from "@/components/shared/logo"
 import { ThemeToggle } from "@/components/shared/theme-toggle"
+import { VerifySearch } from "@/components/shared/verify-search"
 
 const consumerBenefits = [
   "Instant NAFDAC number lookup",
@@ -59,6 +60,7 @@ export default function LandingPage() {
             Verify NAFDAC-registered products, track expiry dates, and stay ahead
             of recalls &mdash; whether you&apos;re a shopper or a business.
           </p>
+          <VerifySearch />
         </div>
 
         <div className="grid w-full max-w-5xl gap-6 sm:grid-cols-2 lg:grid-cols-3">
