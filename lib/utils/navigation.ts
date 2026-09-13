@@ -71,12 +71,12 @@ export const adminNavItems: NavItem[] = [
   { label: "Platform Settings", href: "/admin/settings", icon: "settings" },
 ]
 
-// Minimal on purpose - Module 1 only needs a valid post-registration
-// redirect target. The full sidebar (My Machines, Products & Batches,
-// Generate Codes, Scan Analytics, Duplicate Alerts) is Module 2's own
-// scope; items are added here as each of those modules actually ships, so
-// there's never a nav link pointing at a page that doesn't exist yet.
+// Grows one item per module as each actually ships (Module 3 added "My
+// Machines"; Products & Batches, Generate Codes, Scan Analytics, and
+// Duplicate Alerts follow with Modules 4-6) - never a nav link pointing at
+// a page that doesn't exist yet.
 export const manufacturerNavItems: NavItem[] = [
   { label: "Dashboard", href: "/manufacturer/dashboard", icon: "dashboard" },
+  { label: "My Machines", href: "/manufacturer/machines", icon: "manufacturers" },
   { label: "Settings", href: "/manufacturer/settings", icon: "settings" },
 ]
